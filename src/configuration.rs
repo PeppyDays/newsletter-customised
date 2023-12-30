@@ -25,7 +25,11 @@ pub struct DatabaseConfiguration {
 pub async fn get_configuration() -> Configuration {
     let config = Config::builder()
         .add_source(File::with_name("configuration.yaml"))
-        .add_source(Environment::with_prefix("NEWSLETTER"))
+        .add_source(
+            Environment::with_prefix("APP")
+                .prefix_separator("_")
+                .separator("_"),
+        )
         .build()
         .expect("Failed to build configuration");
 
