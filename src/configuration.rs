@@ -15,11 +15,32 @@ pub struct ApplicationConfiguration {
 
 #[derive(serde::Deserialize)]
 pub struct DatabaseConfiguration {
+    pub engine: DatabaseEngine,
     pub host: String,
     pub port: u16,
     pub username: String,
     pub password: String,
     pub database: String,
+}
+
+#[derive(serde::Deserialize)]
+pub enum DatabaseEngine {
+    MySQL,
+    PostgreSQL,
+}
+
+impl DatabaseConfiguration {
+    pub fn connection_string(&self) -> String {
+        let engine = match self.engine {
+            DatabaseEngine::MySQL => "mysql",
+            DatabaseEngine::PostgreSQL => "postgres",
+        };
+
+        format!(
+            "{}://{}:{}@{}:{}/{}",
+            engine, self.username, self.password, self.host, self.port, self.database,
+        )
+    }
 }
 
 pub async fn get_configuration() -> Configuration {
