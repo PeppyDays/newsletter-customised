@@ -38,7 +38,7 @@ pub async fn get_configuration() -> Configuration {
         .expect("Failed to deserialize configuration")
 }
 
-pub async fn get_listener(configuration: &Configuration) -> TcpListener {
+pub async fn bind_listener(configuration: &Configuration) -> TcpListener {
     TcpListener::bind(format!(
         "{}:{}",
         configuration.application.host, configuration.application.port,
