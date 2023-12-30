@@ -12,8 +12,17 @@ name = "newsletter"
 
 [dependencies]
 axum = "0.7"
+config = { version = "0.13", default-features = false, features = ["yaml"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sqlx = { version = "0.7", default-features = false, features = [
+  "uuid",
+  "migrate",
+  "chrono",
+  "postgres",
+  "macros",
+  "runtime-tokio-rustls",
+] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [dev-dependencies]

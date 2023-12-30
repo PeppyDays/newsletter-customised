@@ -1,22 +1,37 @@
+use config::{Config, Environment, File};
 use tokio::net::TcpListener;
 
+#[derive(serde::Deserialize)]
 pub struct Configuration {
     pub application: ApplicationConfiguration,
+    pub database: DatabaseConfiguration,
 }
 
+#[derive(serde::Deserialize)]
 pub struct ApplicationConfiguration {
     pub host: String,
     pub port: u16,
 }
 
+#[derive(serde::Deserialize)]
+pub struct DatabaseConfiguration {
+    pub host: String,
+    pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub database: String,
+}
+
 pub async fn get_configuration() -> Configuration {
-    // TODO: wire up the actual configuration later
-    Configuration {
-        application: ApplicationConfiguration {
-            host: String::from("127.0.0.1"),
-            port: 8080,
-        },
-    }
+    let config = Config::builder()
+        .add_source(File::with_name("configuration.yaml"))
+        .add_source(Environment::with_prefix("NEWSLETTER"))
+        .build()
+        .expect("Failed to build configuration");
+
+    config
+        .try_deserialize()
+        .expect("Failed to deserialize configuration")
 }
 
 pub async fn get_listener(configuration: &Configuration) -> TcpListener {
