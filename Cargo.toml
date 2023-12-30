@@ -12,7 +12,12 @@ name = "newsletter"
 
 [dependencies]
 axum = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [dev-dependencies]
-reqwest = { version = "0.11", default-features = false, features = [ "json", "rustls-tls" ] }
+reqwest = { version = "0.11", default-features = false, features = [
+  "json",
+  "rustls-tls",
+] }
