@@ -4,9 +4,11 @@ use axum::{
 };
 
 use crate::api::handlers::{check_health, subscribe};
+use crate::api::runner::Container;
 
-pub async fn get_router() -> Router {
+pub async fn get_router(container: Container) -> Router {
     Router::new()
-        .route("/", get(check_health::handle))
         .route("/subscribe", post(subscribe::handle))
+        .with_state(container)
+        .route("/", get(check_health::handle))
 }

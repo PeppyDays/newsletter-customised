@@ -1,4 +1,7 @@
-use fake::{faker, Fake};
+use fake::{
+    faker::{internet::en::SafeEmail, name::en::FirstName},
+    Fake,
+};
 use reqwest::StatusCode;
 
 use newsletter::domain::subscriber::SubscriberRepository;
@@ -10,8 +13,8 @@ async fn subscription_with_valid_form_returns_200() {
     // given
     let app = App::new().await;
 
-    let email: String = faker::internet::en::SafeEmail().fake();
-    let name: String = faker::name::en::FirstName().fake();
+    let email: String = SafeEmail().fake();
+    let name: String = FirstName().fake();
     let parameters = [("email", email.as_str()), ("name", name.as_str())];
 
     // when
@@ -34,7 +37,10 @@ async fn subscription_with_valid_form_returns_200() {
 async fn subscription_with_missing_fields_returns_422() {
     // given
     let app = App::new().await;
-    let parameters_set = [[("email", "peppydays@gmail.com")], [("name", "Arine")]];
+
+    let email: String = SafeEmail().fake();
+    let name: String = FirstName().fake();
+    let parameters_set = [[("email", email.as_str())], [("name", name.as_str())]];
 
     for parameters in parameters_set {
         // when

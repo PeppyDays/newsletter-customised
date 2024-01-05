@@ -1,9 +1,16 @@
+use std::sync::Arc;
+
 use tokio::net::TcpListener;
 
-use crate::api::router;
+use crate::{api::router, domain::subscriber::SubscriberRepository};
 
-pub async fn run(listener: TcpListener) {
-    let app = router::get_router().await;
+#[derive(Clone)]
+pub struct Container {
+    pub subscriber_repository: Arc<dyn SubscriberRepository>,
+}
+
+pub async fn run(listener: TcpListener, container: Container) {
+    let app = router::get_router(container).await;
 
     axum::serve(listener, app)
         .await

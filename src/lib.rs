@@ -1,4 +1,4 @@
 pub mod api;
 pub mod configuration;
-pub(crate) mod domain;
-pub(crate) mod infrastructure;
+pub mod domain;
+pub mod infrastructure;

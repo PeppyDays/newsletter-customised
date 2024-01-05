@@ -143,7 +143,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn fetching_after_saving_via_repository_makes_the_same_subscriber() {
+    async fn fetching_by_id_after_saving_via_repository_makes_the_same_subscriber() {
         // given
         let repository = get_repository().await;
         let subscriber = generate_subscriber();
