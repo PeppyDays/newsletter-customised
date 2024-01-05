@@ -54,6 +54,7 @@ impl From<SubscriberDataModel> for Subscriber {
     }
 }
 
+#[derive(Clone)]
 pub struct SubscriberPostgresRepository {
     pool: Pool<Postgres>,
 }
@@ -107,7 +108,7 @@ mod tests {
 
     use crate::configuration::*;
     use crate::domain::subscriber::*;
-    use crate::repository::subscriber::*;
+    use crate::infrastructure::repositories::subscriber::*;
 
     async fn get_repository() -> SubscriberPostgresRepository {
         let configuration = get_configuration().await;
