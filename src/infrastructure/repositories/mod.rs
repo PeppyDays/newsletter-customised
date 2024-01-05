@@ -1,1 +1,3 @@
-pub mod subscriber;
+mod subscriber;
+
+pub use subscriber::SubscriberPostgresRepository;

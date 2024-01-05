@@ -1,14 +1,21 @@
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
+};
 
 use reqwest::Client;
 use serde::Serialize;
 use tokio::net::TcpListener;
 
-use newsletter::api;
+use newsletter::{api, configuration, infrastructure::repositories::SubscriberPostgresRepository};
 
 pub struct App {
+    // application address
     pub address: SocketAddr,
+    // reqwest client for checking API calls from external client
     pub client: Client,
+    // subscriber repository for checking data in the database
+    pub subscriber_repository: Arc<SubscriberPostgresRepository>,
 }
 
 // create a test application
@@ -20,13 +27,28 @@ impl App {
             .expect("Failed to start an test application");
         let address = listener.local_addr().unwrap();
 
+        // create container for application context
+        let configuration = configuration::get_configuration().await;
+        let subscriber_repository = SubscriberPostgresRepository::new(
+            sqlx::Pool::connect(&configuration.database.connection_string())
+                .await
+                .unwrap(),
+        );
+        let container = api::runner::Container {
+            subscriber_repository: Arc::new(subscriber_repository.clone()),
+        };
+
         // create http client
         let client = Client::new();
 
         // start a server
-        tokio::spawn(api::runner::run(listener));
+        tokio::spawn(api::runner::run(listener, container));
 
-        App { address, client }
+        App {
+            address,
+            client,
+            subscriber_repository: Arc::new(subscriber_repository),
+        }
     }
 }
 

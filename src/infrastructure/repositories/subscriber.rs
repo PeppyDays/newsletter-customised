@@ -70,11 +70,13 @@ impl SubscriberPostgresRepository {
         "INSERT INTO subscribers (id, email, name, subscribed_at) VALUES ($1, $2, $3, $4)";
     const FIND_BY_ID_QUERY: &'static str =
         "SELECT id, email, name, subscribed_at FROM subscribers WHERE id = $1";
+    const FIND_BY_EMAIL_QUERY: &'static str =
+        "SELECT id, email, name, subscribed_at FROM subscribers WHERE email = $1";
 }
 
 #[async_trait::async_trait]
 impl SubscriberRepository for SubscriberPostgresRepository {
-    async fn save(&mut self, subscriber: &Subscriber) -> Result<(), String> {
+    async fn save(&self, subscriber: &Subscriber) -> Result<(), String> {
         let data_model = SubscriberDataModel::from(subscriber);
 
         sqlx::query(SubscriberPostgresRepository::SAVE_QUERY)
@@ -89,7 +91,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
         Ok(())
     }
 
-    async fn find_by_id(&mut self, id: Uuid) -> Result<Option<Subscriber>, String> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, String> {
         Ok(sqlx::query(SubscriberPostgresRepository::FIND_BY_ID_QUERY)
             .bind(id)
             .map(|row: PgRow| SubscriberDataModel::from(&row))
@@ -97,6 +99,18 @@ impl SubscriberRepository for SubscriberPostgresRepository {
             .await
             .unwrap()
             .map(Subscriber::from))
+    }
+
+    async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, String> {
+        Ok(
+            sqlx::query(SubscriberPostgresRepository::FIND_BY_EMAIL_QUERY)
+                .bind(email)
+                .map(|row: PgRow| SubscriberDataModel::from(&row))
+                .fetch_optional(&self.pool)
+                .await
+                .unwrap()
+                .map(Subscriber::from),
+        )
     }
 }
 
@@ -131,7 +145,7 @@ mod tests {
     #[tokio::test]
     async fn fetching_after_saving_via_repository_makes_the_same_subscriber() {
         // given
-        let mut repository = get_repository().await;
+        let repository = get_repository().await;
         let subscriber = generate_subscriber();
 
         // when
@@ -147,7 +161,7 @@ mod tests {
     #[tokio::test]
     async fn fetching_not_existing_subscriber_should_return_option_null() {
         // given
-        let mut repository = get_repository().await;
+        let repository = get_repository().await;
         let subscriber = generate_subscriber();
 
         // when

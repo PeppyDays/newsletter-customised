@@ -13,7 +13,8 @@ impl Subscriber {
 }
 
 #[async_trait::async_trait]
-pub trait SubscriberRepository {
-    async fn save(&mut self, subscriber: &Subscriber) -> Result<(), String>;
-    async fn find_by_id(&mut self, id: Uuid) -> Result<Option<Subscriber>, String>;
+pub trait SubscriberRepository: Send + Sync {
+    async fn save(&self, subscriber: &Subscriber) -> Result<(), String>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, String>;
+    async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, String>;
 }
