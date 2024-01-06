@@ -10,6 +10,7 @@ Required to install dependencies:
 
 - Docker and Docker Compose
 - Just
+- Cargo Watch
 - SQLx CLI
 - Bunyan
 
@@ -18,6 +19,7 @@ If you are using Mac, you can install them with the following commands:
 ```bash
 brew install --cask docker
 brew install just
+cargo install cargo-watch
 cargo install sqlx-cli --no-default-features --features rustls,postgres,mysql
 cargo install bunyan
 ```

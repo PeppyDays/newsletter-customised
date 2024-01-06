@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Subscriber {
     pub id: Uuid,
     pub email: String,

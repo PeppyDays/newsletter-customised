@@ -3,22 +3,19 @@ use uuid::Uuid;
 
 use crate::{api::runner::Container, domain::subscriber::Subscriber};
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 pub struct Request {
     email: String,
     name: String,
 }
 
+#[tracing::instrument(name = "Adding a new subscriber", skip(container))]
 pub async fn handle(
     State(container): State<Container>,
     Form(request): Form<Request>,
 ) -> impl IntoResponse {
     let id = Uuid::new_v4();
-    let subscriber = Subscriber {
-        id,
-        email: request.email,
-        name: request.name,
-    };
+    let subscriber = Subscriber::new(id, request.email, request.name);
 
     match container.subscriber_repository.save(&subscriber).await {
         Ok(_) => StatusCode::OK,

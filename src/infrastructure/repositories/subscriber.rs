@@ -76,6 +76,7 @@ impl SubscriberPostgresRepository {
 
 #[async_trait::async_trait]
 impl SubscriberRepository for SubscriberPostgresRepository {
+    #[tracing::instrument(name = "Saving subscriber details", skip(self))]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
         let data_model = SubscriberDataModel::from(subscriber);
 
@@ -91,6 +92,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
         Ok(())
     }
 
+    #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
         let optional_data_model = sqlx::query(Self::FIND_BY_ID_QUERY)
             .bind(id)
@@ -105,6 +107,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
         }
     }
 
+    #[tracing::instrument(name = "Searching subscriber details by email", skip(self))]
     async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError> {
         let optional_data_model = sqlx::query(Self::FIND_BY_EMAIL_QUERY)
             .bind(email)
