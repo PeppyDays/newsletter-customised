@@ -28,3 +28,9 @@ container-down:
 migrate:
 	sqlx database create
 	sqlx migrate run
+
+fmt:
+	cargo fmt --check
+
+lint:
+	cargo clippy -- -D warnings

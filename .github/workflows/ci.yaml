@@ -1,0 +1,52 @@
+name: Newsletter CI
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: extractions/setup-just@v1
+      - uses: actions/checkout@v3
+      - name: Run containers
+        run: |
+          just container-up
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install sqlx
+        run: cargo install sqlx-cli
+      - name: Migrate database
+        run: |
+          just migrate
+      - name: Run tests
+        run: |
+          just test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: extractions/setup-just@v1
+      - uses: actions/checkout@v3
+      - name: Run containers
+        run: |
+          just container-up
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Install sqlx
+        run: |
+          cargo install sqlx-cli
+      - name: Migrate database
+        run: |
+          just migrate
+      - name: Formatting
+        run: |
+          just fmt
+      - name: Linting
+        run: cargo clippy -- -D warnings
