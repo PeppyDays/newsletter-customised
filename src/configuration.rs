@@ -5,6 +5,7 @@ use tokio::net::TcpListener;
 pub struct Configuration {
     pub application: ApplicationConfiguration,
     pub database: DatabaseConfiguration,
+    pub logging: LoggingConfiguration,
 }
 
 #[derive(serde::Deserialize)]
@@ -48,6 +49,11 @@ impl DatabaseConfiguration {
             self.database,
         )
     }
+}
+
+#[derive(serde::Deserialize)]
+pub struct LoggingConfiguration {
+    pub level: String,
 }
 
 pub async fn get_configuration() -> Configuration {

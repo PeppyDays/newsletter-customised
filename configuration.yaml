@@ -9,3 +9,6 @@ database:
   username: newsletter
   password: welcome
   database: newsletter
+
+logging:
+  level: info
