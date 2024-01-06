@@ -18,7 +18,6 @@ pub async fn get_router(container: Container) -> Router {
         .layer(
             // Refer to https://github.com/tokio-rs/axum/blob/main/examples/tracing-aka-logging/Cargo.toml
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
-                let correlation_id = Uuid::new_v4();
                 let path = request
                     .extensions()
                     .get::<MatchedPath>()
@@ -28,8 +27,7 @@ pub async fn get_router(container: Container) -> Router {
                     "Processing HTTP request",
                     method = ?request.method(),
                     path,
-                    correlation_id = %correlation_id,
-                    causality_id = %correlation_id,
+                    correlation_id = %Uuid::new_v4(),
                 )
             }),
         )
