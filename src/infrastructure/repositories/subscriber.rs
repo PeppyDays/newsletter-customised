@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{postgres::PgRow, Pool, Postgres, Row};
 use uuid::Uuid;
 
-use crate::domain::subscriber::{Subscriber, SubscriberRepository};
+use crate::domain::subscriber::{Subscriber, SubscriberError, SubscriberRepository};
 
 struct SubscriberDataModel {
     id: Uuid,
@@ -76,41 +76,47 @@ impl SubscriberPostgresRepository {
 
 #[async_trait::async_trait]
 impl SubscriberRepository for SubscriberPostgresRepository {
-    async fn save(&self, subscriber: &Subscriber) -> Result<(), String> {
+    async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
         let data_model = SubscriberDataModel::from(subscriber);
 
-        sqlx::query(SubscriberPostgresRepository::SAVE_QUERY)
+        sqlx::query(Self::SAVE_QUERY)
             .bind(data_model.id)
             .bind(data_model.email)
             .bind(data_model.name)
             .bind(data_model.subscribed_at)
             .execute(&self.pool)
             .await
-            .unwrap();
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
         Ok(())
     }
 
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, String> {
-        Ok(sqlx::query(SubscriberPostgresRepository::FIND_BY_ID_QUERY)
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
+        let optional_data_model = sqlx::query(Self::FIND_BY_ID_QUERY)
             .bind(id)
             .map(|row: PgRow| SubscriberDataModel::from(&row))
             .fetch_optional(&self.pool)
             .await
-            .unwrap()
-            .map(Subscriber::from))
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
+
+        match optional_data_model {
+            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
+            None => Ok(None),
+        }
     }
 
-    async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, String> {
-        Ok(
-            sqlx::query(SubscriberPostgresRepository::FIND_BY_EMAIL_QUERY)
-                .bind(email)
-                .map(|row: PgRow| SubscriberDataModel::from(&row))
-                .fetch_optional(&self.pool)
-                .await
-                .unwrap()
-                .map(Subscriber::from),
-        )
+    async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError> {
+        let optional_data_model = sqlx::query(Self::FIND_BY_EMAIL_QUERY)
+            .bind(email)
+            .map(|row: PgRow| SubscriberDataModel::from(&row))
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
+
+        match optional_data_model {
+            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
+            None => Ok(None),
+        }
     }
 }
 
