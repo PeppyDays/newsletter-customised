@@ -3,8 +3,10 @@ use std::{
     sync::Arc,
 };
 
+use fake::Fake;
 use reqwest::Client;
 use serde::Serialize;
+use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
 
 use newsletter::{api, configuration, infrastructure::repositories::SubscriberPostgresRepository};
@@ -27,13 +29,37 @@ impl App {
             .expect("Failed to start an test application");
         let address = listener.local_addr().unwrap();
 
-        // create container for application context
-        let configuration = configuration::get_configuration().await;
-        let subscriber_repository = SubscriberPostgresRepository::new(
-            sqlx::Pool::connect(&configuration.database.connection_string())
+        // get and manipulate configuration
+        let mut configuration = configuration::get_configuration().await;
+
+        // randomise database for data isolation
+        let database_postfix = 10.fake::<String>();
+        configuration.database.database = format!("{}_{}", "test", database_postfix);
+
+        // configure database
+        let mut connection =
+            PgConnection::connect(&configuration.database.connection_string_without_database())
                 .await
-                .unwrap(),
-        );
+                .unwrap();
+
+        connection
+            .execute(format!(r#"CREATE DATABASE "{}";"#, configuration.database.database).as_str())
+            .await
+            .unwrap();
+
+        // create a connection pool for migration and repositories
+        let pool = sqlx::Pool::<sqlx::Postgres>::connect(
+            &configuration.database.connection_string_with_database(),
+        )
+        .await
+        .unwrap();
+
+        // migrate schema changes
+        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+
+        // create container for application context
+        let subscriber_repository = SubscriberPostgresRepository::new(pool);
+
         let container = api::runner::Container {
             subscriber_repository: Arc::new(subscriber_repository.clone()),
         };

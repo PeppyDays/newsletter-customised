@@ -128,7 +128,7 @@ mod tests {
         let configuration = get_configuration().await;
 
         SubscriberPostgresRepository::new(
-            sqlx::Pool::connect(&configuration.database.connection_string())
+            sqlx::Pool::connect(&configuration.database.connection_string_with_database())
                 .await
                 .unwrap(),
         )

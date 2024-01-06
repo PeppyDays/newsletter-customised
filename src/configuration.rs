@@ -30,15 +30,22 @@ pub enum DatabaseEngine {
 }
 
 impl DatabaseConfiguration {
-    pub fn connection_string(&self) -> String {
+    pub fn connection_string_without_database(&self) -> String {
         let engine = match self.engine {
             DatabaseEngine::MySQL => "mysql",
-            DatabaseEngine::PostgreSQL => "postgres",
+            DatabaseEngine::PostgreSQL => "postgresql",
         };
 
         format!(
-            "{}://{}:{}@{}:{}/{}",
-            engine, self.username, self.password, self.host, self.port, self.database,
+            "{}://{}:{}@{}:{}",
+            engine, self.username, self.password, self.host, self.port,
+        )
+    }
+    pub fn connection_string_with_database(&self) -> String {
+        format!(
+            "{}/{}",
+            self.connection_string_without_database(),
+            self.database,
         )
     }
 }

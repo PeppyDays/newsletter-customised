@@ -11,7 +11,7 @@ async fn main() {
     let listener = configuration::bind_listener(&configuration).await;
 
     let subscriber_repository = repositories::SubscriberPostgresRepository::new(
-        sqlx::Pool::connect(&configuration.database.connection_string())
+        sqlx::Pool::connect(&configuration.database.connection_string_with_database())
             .await
             .unwrap(),
     );
