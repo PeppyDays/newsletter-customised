@@ -1,4 +1,5 @@
 use config::{Config, Environment, File};
+use secrecy::{ExposeSecret, Secret};
 use tokio::net::TcpListener;
 
 #[derive(serde::Deserialize)]
@@ -20,7 +21,7 @@ pub struct DatabaseConfiguration {
     pub host: String,
     pub port: u16,
     pub username: String,
-    pub password: String,
+    pub password: Secret<String>,
     pub database: String,
 }
 
@@ -39,7 +40,11 @@ impl DatabaseConfiguration {
 
         format!(
             "{}://{}:{}@{}:{}",
-            engine, self.username, self.password, self.host, self.port,
+            engine,
+            self.username,
+            self.password.expose_secret(),
+            self.host,
+            self.port,
         )
     }
     pub fn connection_string_with_database(&self) -> String {
