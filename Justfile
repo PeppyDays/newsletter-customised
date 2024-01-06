@@ -8,13 +8,13 @@ build:
 	cargo build
 
 run: migrate
-	cargo run
+	cargo run | bunyan
 
 sqlx-prepare:
 	cargo sqlx prepare --workspace
 
 watch-run: migrate
-	cargo watch -x run
+	cargo watch -x run | bunyan
 
 container-up:
 	docker compose up -d
@@ -25,4 +25,3 @@ container-down:
 migrate:
 	sqlx database create
 	sqlx migrate run
-

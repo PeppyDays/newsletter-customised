@@ -9,8 +9,9 @@ The original content is great, but I want to make it more practical for me. As a
 Required to install dependencies:
 
 - Docker and Docker Compose
-- SQLx CLI
 - Just
+- SQLx CLI
+- Bunyan
 
 If you are using Mac, you can install them with the following commands:
 
@@ -18,4 +19,5 @@ If you are using Mac, you can install them with the following commands:
 brew install --cask docker
 brew install just
 cargo install sqlx-cli --no-default-features --features rustls,postgres,mysql
+cargo install bunyan
 ```
