@@ -4,6 +4,9 @@ default:
 test: migrate
 	cargo test
 
+test-with-log: migrate
+	TEST_LOG=true cargo test | bunyan
+
 build:
 	cargo build
 

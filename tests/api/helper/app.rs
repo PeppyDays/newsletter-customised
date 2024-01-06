@@ -4,12 +4,32 @@ use std::{
 };
 
 use fake::Fake;
+use once_cell::sync::Lazy;
 use reqwest::Client;
 use serde::Serialize;
 use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
 
-use newsletter::{api, configuration, infrastructure::repositories::SubscriberPostgresRepository};
+use newsletter::{
+    api, configuration, infrastructure::repositories::SubscriberPostgresRepository, telemetry,
+};
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let default_filter_level = "info";
+    let subscriber_name = "newsletter-test";
+
+    // if TEST_LOG environment variable is set, then log to stdout
+    // otherwise, log to sink, which is a blackhole
+    if std::env::var("TEST_LOG").is_ok() {
+        let subscriber =
+            telemetry::get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
+        telemetry::initialize_subscriber(subscriber);
+    } else {
+        let subscriber =
+            telemetry::get_subscriber(subscriber_name, default_filter_level, std::io::sink);
+        telemetry::initialize_subscriber(subscriber);
+    };
+});
 
 pub struct App {
     // application address
@@ -23,6 +43,9 @@ pub struct App {
 // create a test application
 impl App {
     pub async fn new() -> App {
+        // configure logging
+        Lazy::force(&TRACING);
+
         // configure listener with randomised port
         let listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))
             .await
