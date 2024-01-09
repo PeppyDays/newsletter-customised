@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::{postgres::PgRow, Pool, Postgres, Row};
+use sqlx::{postgres::PgRow, Executor, Pool, Postgres, Row};
 use uuid::Uuid;
 
 use crate::domain::subscriber::{Subscriber, SubscriberError, SubscriberRepository};
@@ -65,27 +65,24 @@ impl SubscriberPostgresRepository {
     }
 }
 
-impl SubscriberPostgresRepository {
-    const SAVE_QUERY: &'static str =
-        "INSERT INTO subscribers (id, email, name, subscribed_at) VALUES ($1, $2, $3, $4)";
-    const FIND_BY_ID_QUERY: &'static str =
-        "SELECT id, email, name, subscribed_at FROM subscribers WHERE id = $1";
-    const FIND_BY_EMAIL_QUERY: &'static str =
-        "SELECT id, email, name, subscribed_at FROM subscribers WHERE email = $1";
-}
-
 #[async_trait::async_trait]
 impl SubscriberRepository for SubscriberPostgresRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip(self))]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
         let data_model = SubscriberDataModel::from(subscriber);
+        let query = sqlx::query!(
+            "INSERT INTO subscribers (id, email, name, subscribed_at) VALUES ($1, $2, $3, $4)",
+            data_model.id,
+            data_model.email,
+            data_model.name,
+            data_model.subscribed_at,
+        );
 
-        sqlx::query(Self::SAVE_QUERY)
-            .bind(data_model.id)
-            .bind(data_model.email)
-            .bind(data_model.name)
-            .bind(data_model.subscribed_at)
-            .execute(&self.pool)
+        self.pool
+            .acquire()
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .execute(query)
             .await
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
@@ -94,12 +91,20 @@ impl SubscriberRepository for SubscriberPostgresRepository {
 
     #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
-        let optional_data_model = sqlx::query(Self::FIND_BY_ID_QUERY)
-            .bind(id)
-            .map(|row: PgRow| SubscriberDataModel::from(&row))
-            .fetch_optional(&self.pool)
+        let query = sqlx::query!(
+            "SELECT id, email, name, subscribed_at FROM subscribers WHERE id = $1",
+            id
+        );
+
+        let optional_data_model = self
+            .pool
+            .acquire()
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .fetch_optional(query)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .map(|row| SubscriberDataModel::from(&row));
 
         match optional_data_model {
             Some(data_model) => Ok(Some(Subscriber::from(data_model))),
@@ -109,12 +114,20 @@ impl SubscriberRepository for SubscriberPostgresRepository {
 
     #[tracing::instrument(name = "Searching subscriber details by email", skip(self))]
     async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError> {
-        let optional_data_model = sqlx::query(Self::FIND_BY_EMAIL_QUERY)
-            .bind(email)
-            .map(|row: PgRow| SubscriberDataModel::from(&row))
-            .fetch_optional(&self.pool)
+        let query = sqlx::query!(
+            "SELECT id, email, name, subscribed_at FROM subscribers WHERE email = $1",
+            email
+        );
+
+        let optional_data_model = self
+            .pool
+            .acquire()
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .fetch_optional(query)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .map(|row| SubscriberDataModel::from(&row));
 
         match optional_data_model {
             Some(data_model) => Ok(Some(Subscriber::from(data_model))),
