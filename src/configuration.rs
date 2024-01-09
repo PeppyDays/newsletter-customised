@@ -11,17 +11,29 @@ pub struct Configuration {
 
 #[derive(serde::Deserialize)]
 pub struct ApplicationConfiguration {
-    pub listening_address: ListeningAddress,
+    pub listening_address: ApplicationListeningAddress,
 }
 
 #[derive(serde::Deserialize)]
-pub struct ListeningAddress {
+pub struct ApplicationListeningAddress {
     pub host: String,
     pub port: u16,
 }
 
 #[derive(serde::Deserialize)]
 pub struct DatabaseConfiguration {
+    pub source: DatabaseSource,
+    pub pool_options: DatabasePoolOptions,
+}
+
+#[derive(serde::Deserialize)]
+pub enum DatabaseEngine {
+    MySQL,
+    PostgreSQL,
+}
+
+#[derive(serde::Deserialize)]
+pub struct DatabaseSource {
     pub engine: DatabaseEngine,
     pub host: String,
     pub port: u16,
@@ -31,14 +43,15 @@ pub struct DatabaseConfiguration {
 }
 
 #[derive(serde::Deserialize)]
-pub enum DatabaseEngine {
-    MySQL,
-    PostgreSQL,
+pub struct DatabasePoolOptions {
+    pub min_connections: u32,
+    pub max_connections: u32,
+    pub acquire_timeout: u64,
 }
 
 impl DatabaseConfiguration {
     pub fn connection_string_without_database(&self) -> String {
-        let engine = match self.engine {
+        let engine = match self.source.engine {
             DatabaseEngine::MySQL => "mysql",
             DatabaseEngine::PostgreSQL => "postgresql",
         };
@@ -46,17 +59,17 @@ impl DatabaseConfiguration {
         format!(
             "{}://{}:{}@{}:{}",
             engine,
-            self.username,
-            self.password.expose_secret(),
-            self.host,
-            self.port,
+            self.source.username,
+            self.source.password.expose_secret(),
+            self.source.host,
+            self.source.port,
         )
     }
     pub fn connection_string_with_database(&self) -> String {
         format!(
             "{}/{}",
             self.connection_string_without_database(),
-            self.database,
+            self.source.database,
         )
     }
 }

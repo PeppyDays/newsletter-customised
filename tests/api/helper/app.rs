@@ -57,7 +57,7 @@ impl App {
 
         // randomise database for data isolation
         let database_postfix = 10.fake::<String>();
-        configuration.database.database = format!("{}_{}", "test", database_postfix);
+        configuration.database.source.database = format!("{}_{}", "test", database_postfix);
 
         // configure database
         let mut connection =
@@ -66,7 +66,13 @@ impl App {
                 .unwrap();
 
         connection
-            .execute(format!(r#"CREATE DATABASE "{}";"#, configuration.database.database).as_str())
+            .execute(
+                format!(
+                    r#"CREATE DATABASE "{}";"#,
+                    configuration.database.source.database
+                )
+                .as_str(),
+            )
             .await
             .unwrap();
 

@@ -19,7 +19,13 @@ async fn main() {
 
     // configure database connection pool
     let subscriber_repository = repositories::SubscriberPostgresRepository::new(
-        sqlx::Pool::connect(&configuration.database.connection_string_with_database())
+        sqlx::postgres::PgPoolOptions::new()
+            .min_connections(configuration.database.pool_options.min_connections)
+            .max_connections(configuration.database.pool_options.max_connections)
+            .acquire_timeout(std::time::Duration::from_secs(
+                configuration.database.pool_options.acquire_timeout,
+            ))
+            .connect(&configuration.database.connection_string_without_database())
             .await
             .unwrap(),
     );

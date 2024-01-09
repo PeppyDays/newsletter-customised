@@ -4,12 +4,17 @@ application:
     port: 8080
 
 database:
-  engine: PostgreSQL
-  host: 127.0.0.1
-  port: 5432
-  username: newsletter
-  password: welcome
-  database: newsletter
+  source:
+    engine: PostgreSQL
+    host: 127.0.0.1
+    port: 5432
+    username: newsletter
+    password: welcome
+    database: newsletter
+  pool_options:
+    min_connections: 2
+    max_connections: 2
+    acquire_timeout: 3 # seconds
 
 logging:
   level: info
