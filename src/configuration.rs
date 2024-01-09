@@ -11,6 +11,11 @@ pub struct Configuration {
 
 #[derive(serde::Deserialize)]
 pub struct ApplicationConfiguration {
+    pub listening_address: ListeningAddress,
+}
+
+#[derive(serde::Deserialize)]
+pub struct ListeningAddress {
     pub host: String,
     pub port: u16,
 }
@@ -80,7 +85,8 @@ pub async fn get_configuration() -> Configuration {
 pub async fn bind_listener(configuration: &Configuration) -> TcpListener {
     TcpListener::bind(format!(
         "{}:{}",
-        configuration.application.host, configuration.application.port,
+        configuration.application.listening_address.host,
+        configuration.application.listening_address.port,
     ))
     .await
     .expect("Failed to bind a port for application")
