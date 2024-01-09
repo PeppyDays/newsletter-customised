@@ -1,48 +1,54 @@
-use config::{Config, Environment, File};
+use confique::Config;
 use secrecy::{ExposeSecret, Secret};
 use tokio::net::TcpListener;
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct Configuration {
+    #[config(nested)]
     pub application: ApplicationConfiguration,
+    #[config(nested)]
     pub database: DatabaseConfiguration,
+    #[config(nested)]
     pub logging: LoggingConfiguration,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct ApplicationConfiguration {
+    #[config(nested)]
     pub listening_address: ApplicationListeningAddress,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct ApplicationListeningAddress {
+    #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_HOST")]
     pub host: String,
+    #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_PORT")]
     pub port: u16,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct DatabaseConfiguration {
+    #[config(nested)]
     pub source: DatabaseSource,
+    #[config(nested)]
     pub pool_options: DatabasePoolOptions,
 }
 
-#[derive(serde::Deserialize)]
-pub enum DatabaseEngine {
-    MySQL,
-    PostgreSQL,
-}
-
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct DatabaseSource {
-    pub engine: DatabaseEngine,
+    #[config(env = "APP_DATABASE_SOURCE_HOST")]
     pub host: String,
+    #[config(env = "APP_DATABASE_SOURCE_PORT")]
     pub port: u16,
+    #[config(env = "APP_DATABASE_SOURCE_USERNAME")]
     pub username: String,
+    #[config(env = "APP_DATABASE_SOURCE_PASSWORD")]
     pub password: Secret<String>,
+    #[config(env = "APP_DATABASE_SOURCE_DATABASE")]
     pub database: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct DatabasePoolOptions {
     pub min_connections: u32,
     pub max_connections: u32,
@@ -51,14 +57,8 @@ pub struct DatabasePoolOptions {
 
 impl DatabaseConfiguration {
     pub fn connection_string_without_database(&self) -> String {
-        let engine = match self.source.engine {
-            DatabaseEngine::MySQL => "mysql",
-            DatabaseEngine::PostgreSQL => "postgresql",
-        };
-
         format!(
-            "{}://{}:{}@{}:{}",
-            engine,
+            "postgresql://{}:{}@{}:{}",
             self.source.username,
             self.source.password.expose_secret(),
             self.source.host,
@@ -74,25 +74,18 @@ impl DatabaseConfiguration {
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, Config)]
 pub struct LoggingConfiguration {
+    #[config(env = "APP_LOGGING_LEVEL")]
     pub level: String,
 }
 
 pub async fn get_configuration() -> Configuration {
-    let config = Config::builder()
-        .add_source(File::with_name("configuration.yaml"))
-        .add_source(
-            Environment::with_prefix("APP")
-                .prefix_separator("_")
-                .separator("_"),
-        )
-        .build()
-        .expect("Failed to build configuration");
-
-    config
-        .try_deserialize()
-        .expect("Failed to deserialize configuration")
+    Configuration::builder()
+        .env()
+        .file("configuration.yaml")
+        .load()
+        .expect("Failed to load configuration")
 }
 
 pub async fn bind_listener(configuration: &Configuration) -> TcpListener {

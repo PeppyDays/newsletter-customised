@@ -14,6 +14,9 @@ async fn main() {
         telemetry::get_subscriber("newsletter", &configuration.logging.level, std::io::stdout);
     telemetry::initialize_subscriber(subscriber);
 
+    // log the configuration
+    tracing::debug!("{:?}", configuration);
+
     // configure application listener
     let listener = configuration::bind_listener(&configuration).await;
 
