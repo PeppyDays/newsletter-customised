@@ -4,16 +4,17 @@ use uuid::Uuid;
 pub struct Subscriber {
     pub id: Uuid,
     pub email: String,
-    pub name: String,
+    pub name: SubscriberName,
 }
 
 impl Subscriber {
-    pub fn new(id: Uuid, email: String, name: String) -> Self {
-        Self { id, email, name }
+    pub fn new(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
+        let name = SubscriberName::parse(name)?;
+        Ok(Self { id, email, name })
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SubscriberName(String);
 
 impl SubscriberName {
@@ -39,6 +40,12 @@ impl SubscriberName {
         } else {
             Ok(Self(s))
         }
+    }
+}
+
+impl AsRef<str> for SubscriberName {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 

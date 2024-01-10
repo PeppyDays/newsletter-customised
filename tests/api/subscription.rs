@@ -30,7 +30,7 @@ async fn subscription_with_valid_form_returns_200() {
         .unwrap()
         .unwrap();
     assert_eq!(saved_subscriber.email.as_str(), email.as_str());
-    assert_eq!(saved_subscriber.name.as_str(), name.as_str());
+    assert_eq!(saved_subscriber.name.as_ref(), name);
 }
 
 #[tokio::test]

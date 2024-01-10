@@ -28,7 +28,7 @@ impl From<&Subscriber> for SubscriberDataModel {
         Self::new(
             subscriber.id,
             subscriber.email.clone(),
-            subscriber.name.clone(),
+            subscriber.name.as_ref().to_string(),
         )
     }
 }
@@ -44,13 +44,11 @@ impl From<&PgRow> for SubscriberDataModel {
     }
 }
 
-impl From<SubscriberDataModel> for Subscriber {
-    fn from(subscriber_data_model: SubscriberDataModel) -> Self {
-        Self::new(
-            subscriber_data_model.id,
-            subscriber_data_model.email,
-            subscriber_data_model.name,
-        )
+impl TryFrom<SubscriberDataModel> for Subscriber {
+    type Error = SubscriberError;
+
+    fn try_from(data_model: SubscriberDataModel) -> Result<Self, Self::Error> {
+        Self::new(data_model.id, data_model.email, data_model.name)
     }
 }
 
@@ -107,7 +105,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
             .map(|row| SubscriberDataModel::from(&row));
 
         match optional_data_model {
-            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
+            Some(data_model) => Ok(Some(Subscriber::try_from(data_model)?)),
             None => Ok(None),
         }
     }
@@ -130,7 +128,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
             .map(|row| SubscriberDataModel::from(&row));
 
         match optional_data_model {
-            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
+            Some(data_model) => Ok(Some(Subscriber::try_from(data_model)?)),
             None => Ok(None),
         }
     }
@@ -161,7 +159,7 @@ mod tests {
         let email = SafeEmail().fake();
         let name = FirstName().fake();
 
-        Subscriber::new(id, email, name)
+        Subscriber::new(id, email, name).unwrap()
     }
 
     #[tokio::test]
