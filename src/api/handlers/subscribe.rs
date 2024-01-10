@@ -24,6 +24,9 @@ pub async fn handle(
             SubscriberError::InvalidSubscriberName => {
                 ApiError::new(StatusCode::BAD_REQUEST, error.into())
             }
+            SubscriberError::InvalidSubscriberEmail => {
+                ApiError::new(StatusCode::BAD_REQUEST, error.into())
+            }
             SubscriberError::RepositoryOperationFailed(_) | SubscriberError::Unexpected(_) => {
                 ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into())
             }
