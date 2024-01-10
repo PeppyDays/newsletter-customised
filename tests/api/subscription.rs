@@ -9,7 +9,7 @@ use newsletter::domain::subscriber::SubscriberRepository;
 use crate::api::helper::app::App;
 
 #[tokio::test]
-async fn subscription_with_valid_form_returns_200() {
+async fn subscription_with_valid_form_returns_201() {
     // given
     let app = App::new().await;
 
@@ -21,7 +21,7 @@ async fn subscription_with_valid_form_returns_200() {
     let response = app.post_subscribe(&parameters).await;
 
     //then
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::CREATED);
 
     let saved_subscriber = app
         .subscriber_repository
@@ -49,4 +49,24 @@ async fn subscription_with_missing_fields_returns_422() {
         // then
         assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
     }
+}
+
+#[tokio::test]
+async fn subscription_with_too_short_name_returns_400() {
+    // given
+    let app = App::new().await;
+
+    let email: String = SafeEmail().fake();
+    let name = "s".to_string();
+    let parameters = [("email", email), ("name", name)];
+
+    // when
+    let response = app.post_subscribe(&parameters).await;
+
+    // then
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        response.text().await.unwrap(),
+        r#"{"error":"Subscriber's name is invalid"}"#,
+    );
 }
