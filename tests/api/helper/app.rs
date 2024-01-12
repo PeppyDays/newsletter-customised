@@ -108,7 +108,7 @@ impl App {
                 ))
                 .build()
                 .expect("Failed to create email client pool"),
-            configuration.messenger.email.host,
+            reqwest::Url::parse(configuration.messenger.email.host.as_ref()).unwrap(),
             configuration.messenger.email.sender,
         );
 

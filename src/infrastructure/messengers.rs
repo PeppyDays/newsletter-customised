@@ -5,15 +5,15 @@ use crate::domain::subscriber::{
 #[derive(Clone)]
 pub struct SubscriberEmailMessenger {
     client: reqwest::Client,
-    host: String,
+    url: reqwest::Url,
     sender: String,
 }
 
 impl SubscriberEmailMessenger {
-    pub fn new(client: reqwest::Client, host: String, sender: String) -> Self {
+    pub fn new(client: reqwest::Client, url: reqwest::Url, sender: String) -> Self {
         Self {
             client,
-            host,
+            url,
             sender,
         }
     }
