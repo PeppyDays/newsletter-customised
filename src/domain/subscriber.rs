@@ -94,8 +94,20 @@ pub enum SubscriberError {
 mod tests {
     use claims::{assert_err, assert_ok};
     use fake::{faker::internet::en::SafeEmail, Fake};
+    use rand::{rngs::StdRng, SeedableRng};
 
     use crate::domain::subscriber::{SubscriberEmail, SubscriberName};
+
+    #[derive(Debug, Clone)]
+    struct ValidEmailFixture(pub String);
+
+    impl quickcheck::Arbitrary for ValidEmailFixture {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let mut rng = StdRng::seed_from_u64(u64::arbitrary(g));
+            let email = SafeEmail().fake_with_rng(&mut rng);
+            Self(email)
+        }
+    }
 
     #[test]
     fn short_names_are_rejected() {
@@ -144,10 +156,9 @@ mod tests {
         assert_ok!(SubscriberName::parse(name));
     }
 
-    #[test]
-    fn valid_emails_are_parsed_successfully() {
-        let email = SafeEmail().fake();
-        claims::assert_ok!(SubscriberEmail::parse(email));
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
+        SubscriberEmail::parse(valid_email.0).is_ok()
     }
 
     #[test]
