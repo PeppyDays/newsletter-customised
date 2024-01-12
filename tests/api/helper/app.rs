@@ -1,6 +1,7 @@
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     sync::Arc,
+    time::Duration,
 };
 
 use fake::Fake;
@@ -11,8 +12,13 @@ use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
 
 use newsletter::{
-    api, configuration, infrastructure::repositories::SubscriberPostgresRepository, telemetry,
+    api, configuration,
+    infrastructure::{
+        messengers::SubscriberEmailMessenger, repositories::SubscriberPostgresRepository,
+    },
+    telemetry,
 };
+use wiremock::MockServer;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info";
@@ -36,6 +42,8 @@ pub struct App {
     pub address: SocketAddr,
     // reqwest client for checking API calls from external client
     pub client: Client,
+    // mock server for checking email calls from application
+    pub email_server: Arc<MockServer>,
     // subscriber repository for checking data in the database
     pub subscriber_repository: Arc<SubscriberPostgresRepository>,
 }
@@ -86,22 +94,43 @@ impl App {
         // migrate schema changes
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
-        // create container for application context
+        // create repository
         let subscriber_repository = SubscriberPostgresRepository::new(pool);
 
+        // create email messenger
+        let subscriber_messenger = SubscriberEmailMessenger::new(
+            reqwest::Client::builder()
+                .timeout(Duration::from_secs(
+                    configuration.messenger.pool_options.connection_timeout,
+                ))
+                .connect_timeout(Duration::from_secs(
+                    configuration.messenger.pool_options.request_timeout,
+                ))
+                .build()
+                .expect("Failed to create email client pool"),
+            configuration.messenger.email.host,
+            configuration.messenger.email.sender,
+        );
+
+        // create container for application context
         let container = api::runner::Container {
             subscriber_repository: Arc::new(subscriber_repository.clone()),
+            subscriber_messenger: Arc::new(subscriber_messenger.clone()),
         };
 
-        // create http client
+        // create http client for accessing application APIs
         let client = Client::new();
 
         // start a server
+        let email_server = MockServer::start().await;
+        configuration.messenger.email.host = email_server.uri();
+
         tokio::spawn(api::runner::run(listener, container));
 
         App {
             address,
             client,
+            email_server: Arc::new(email_server),
             subscriber_repository: Arc::new(subscriber_repository),
         }
     }
