@@ -4,7 +4,7 @@ use fake::{
 };
 use reqwest::StatusCode;
 
-use newsletter::domain::subscriber::SubscriberRepository;
+use newsletter::domain::subscriber::repository::SubscriberRepository;
 
 use crate::api::helper::app::App;
 

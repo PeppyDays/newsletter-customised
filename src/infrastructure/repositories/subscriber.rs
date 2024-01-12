@@ -2,7 +2,9 @@ use chrono::{DateTime, Utc};
 use sqlx::{postgres::PgRow, Executor, Pool, Postgres, Row};
 use uuid::Uuid;
 
-use crate::domain::subscriber::{Subscriber, SubscriberError, SubscriberRepository};
+use crate::domain::subscriber::error::SubscriberError;
+use crate::domain::subscriber::model::Subscriber;
+use crate::domain::subscriber::repository::SubscriberRepository;
 
 struct SubscriberDataModel {
     id: Uuid,
@@ -141,7 +143,6 @@ mod tests {
     use fake::Fake;
 
     use crate::configuration::*;
-    use crate::domain::subscriber::*;
     use crate::infrastructure::repositories::subscriber::*;
 
     async fn get_repository() -> SubscriberPostgresRepository {

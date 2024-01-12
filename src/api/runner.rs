@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::net::TcpListener;
 
-use crate::{api::router, domain::subscriber::SubscriberRepository};
+use crate::{api::router, domain::subscriber::repository::SubscriberRepository};
 
 #[derive(Clone)]
 pub struct Container {

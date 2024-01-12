@@ -1,5 +1,7 @@
 use uuid::Uuid;
 
+use crate::domain::subscriber::error::SubscriberError;
+
 #[derive(Debug)]
 pub struct Subscriber {
     pub id: Uuid,
@@ -11,6 +13,25 @@ impl Subscriber {
     pub fn new(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
         let name = SubscriberName::parse(name)?;
         Ok(Self { id, email, name })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SubscriberEmail(String);
+
+impl SubscriberEmail {
+    pub fn parse(s: String) -> Result<Self, SubscriberError> {
+        if validator::validate_email(&s) {
+            Ok(Self(s))
+        } else {
+            Err(SubscriberError::InvalidSubscriberEmail)
+        }
+    }
+}
+
+impl AsRef<str> for SubscriberEmail {
+    fn as_ref(&self) -> &str {
+        &self.0
     }
 }
 
@@ -49,54 +70,13 @@ impl AsRef<str> for SubscriberName {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct SubscriberEmail(String);
-
-impl SubscriberEmail {
-    pub fn parse(s: String) -> Result<Self, SubscriberError> {
-        if validator::validate_email(&s) {
-            Ok(Self(s))
-        } else {
-            Err(SubscriberError::InvalidSubscriberEmail)
-        }
-    }
-}
-
-impl AsRef<str> for SubscriberEmail {
-    fn as_ref(&self) -> &str {
-        &self.0
-    }
-}
-
-#[async_trait::async_trait]
-pub trait SubscriberRepository: Send + Sync {
-    async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError>;
-    async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError>;
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum SubscriberError {
-    #[error("Subscriber's name is invalid")]
-    InvalidSubscriberName,
-
-    #[error("Subscriber's email is invalid")]
-    InvalidSubscriberEmail,
-
-    #[error("Failed to operate on repository")]
-    RepositoryOperationFailed(#[source] anyhow::Error),
-
-    #[error("Failed unexpectedly")]
-    Unexpected(#[source] anyhow::Error),
-}
-
 #[cfg(test)]
 mod tests {
     use claims::{assert_err, assert_ok};
     use fake::{faker::internet::en::SafeEmail, Fake};
     use rand::{rngs::StdRng, SeedableRng};
 
-    use crate::domain::subscriber::{SubscriberEmail, SubscriberName};
+    use crate::domain::subscriber::model::{SubscriberEmail, SubscriberName};
 
     #[derive(Debug, Clone)]
     struct ValidEmailFixture(pub String);
@@ -109,6 +89,28 @@ mod tests {
         }
     }
 
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
+        SubscriberEmail::parse(valid_email.0).is_ok()
+    }
+
+    #[test]
+    fn empty_string_emails_are_rejected() {
+        let email = "".to_string();
+        assert_err!(SubscriberEmail::parse(email));
+    }
+
+    #[test]
+    fn emails_missing_at_symbol_are_rejected() {
+        let email = "email.example.com".to_string();
+        assert_err!(SubscriberEmail::parse(email));
+    }
+
+    #[test]
+    fn emails_missing_subject_is_rejected() {
+        let email = "@gmail.com".to_string();
+        assert_err!(SubscriberEmail::parse(email));
+    }
     #[test]
     fn short_names_are_rejected() {
         let name = "a".repeat(SubscriberName::NAME_MIN_LENGTH - 1);
@@ -154,28 +156,5 @@ mod tests {
     fn a_valid_name_is_parsed_successfully() {
         let name = "Arine You".to_string();
         assert_ok!(SubscriberName::parse(name));
-    }
-
-    #[quickcheck_macros::quickcheck]
-    fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
-        SubscriberEmail::parse(valid_email.0).is_ok()
-    }
-
-    #[test]
-    fn empty_string_emails_are_rejected() {
-        let email = "".to_string();
-        assert_err!(SubscriberEmail::parse(email));
-    }
-
-    #[test]
-    fn emails_missing_at_symbol_are_rejected() {
-        let email = "email.example.com".to_string();
-        assert_err!(SubscriberEmail::parse(email));
-    }
-
-    #[test]
-    fn emails_missing_subject_is_rejected() {
-        let email = "@gmail.com".to_string();
-        assert_err!(SubscriberEmail::parse(email));
     }
 }

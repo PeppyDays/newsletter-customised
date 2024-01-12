@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     api::{error::ApiError, runner::Container},
-    domain::subscriber::{Subscriber, SubscriberError},
+    domain::subscriber::{error::SubscriberError, model::Subscriber},
 };
 
 #[derive(serde::Deserialize, Debug)]
