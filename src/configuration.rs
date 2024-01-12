@@ -9,6 +9,8 @@ pub struct Configuration {
     #[config(nested)]
     pub database: DatabaseConfiguration,
     #[config(nested)]
+    pub messenger: MessengerConfiguration,
+    #[config(nested)]
     pub logging: LoggingConfiguration,
 }
 
@@ -72,6 +74,26 @@ impl DatabaseConfiguration {
             self.source.database,
         )
     }
+}
+
+#[derive(Debug, Config)]
+pub struct MessengerConfiguration {
+    #[config(nested)]
+    pub email: EmailService,
+    #[config(nested)]
+    pub pool_options: EmailClientPoolOptions,
+}
+
+#[derive(Debug, Config)]
+pub struct EmailService {
+    pub host: String,
+    pub sender: String,
+}
+
+#[derive(Debug, Config)]
+pub struct EmailClientPoolOptions {
+    pub connection_timeout: u64,
+    pub request_timeout: u64,
 }
 
 #[derive(Debug, Config)]

@@ -16,5 +16,13 @@ database:
     max_connections: 2
     acquire_timeout: 3 # seconds
 
+messenger:
+  email:
+    host: http://127.0.0.1
+    sender: newsletter@example.com
+  pool_options:
+    connection_timeout: 3 # seconds
+    request_timeout: 1 # seconds
+
 logging:
   level: info

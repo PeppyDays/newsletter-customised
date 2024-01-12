@@ -1,7 +1,9 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use newsletter::api;
 use newsletter::configuration;
+use newsletter::infrastructure::messengers;
 use newsletter::infrastructure::repositories;
 use newsletter::telemetry;
 
@@ -30,12 +32,28 @@ async fn main() {
             ))
             .connect(&configuration.database.connection_string_without_database())
             .await
-            .unwrap(),
+            .expect("Failed to create repository connection pool"),
+    );
+
+    // configure email service client for messenger
+    let subscriber_messenger = messengers::SubscriberEmailMessenger::new(
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(
+                configuration.messenger.pool_options.connection_timeout,
+            ))
+            .connect_timeout(Duration::from_secs(
+                configuration.messenger.pool_options.request_timeout,
+            ))
+            .build()
+            .expect("Failed to create email client pool"),
+        configuration.messenger.email.host,
+        configuration.messenger.email.sender,
     );
 
     // configure container which of the application context
     let container = api::runner::Container {
         subscriber_repository: Arc::new(subscriber_repository),
+        subscriber_messenger: Arc::new(subscriber_messenger),
     };
 
     api::runner::run(listener, container).await
