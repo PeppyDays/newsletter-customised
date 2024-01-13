@@ -43,6 +43,8 @@ impl SubscriberMessenger for SubscriberEmailMessenger {
             .json(&body)
             .send()
             .await
+            .map_err(|error| SubscriberError::MessengerOperationFailed(error.into()))?
+            .error_for_status()
             .map_err(|error| SubscriberError::MessengerOperationFailed(error.into()))?;
 
         Ok(())
@@ -60,7 +62,7 @@ struct Request<'a> {
 
 #[cfg(test)]
 mod tests {
-    use claims::assert_ok;
+    use claims::{assert_err, assert_ok};
     use fake::{
         faker::{
             internet::en::SafeEmail,
@@ -170,5 +172,28 @@ mod tests {
 
         // then
         assert_ok!(response);
+    }
+
+    #[tokio::test]
+    async fn send_email_fails_if_server_returns_500() {
+        // given
+        let (email_server, messenger) = run_email_server().await;
+
+        let subscriber =
+            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+        let subject: String = Sentence(1..2).fake();
+        let content: String = Paragraph(1..10).fake();
+
+        Mock::given(any())
+            .respond_with(ResponseTemplate::new(500))
+            .expect(1)
+            .mount(&email_server)
+            .await;
+
+        // when
+        let response = messenger.send(&subscriber, &subject, &content).await;
+
+        // then
+        assert_err!(response);
     }
 }
