@@ -60,6 +60,7 @@ struct Request<'a> {
 
 #[cfg(test)]
 mod tests {
+    use claims::assert_ok;
     use fake::{
         faker::{
             internet::en::SafeEmail,
@@ -70,7 +71,7 @@ mod tests {
     };
     use uuid::Uuid;
     use wiremock::{
-        matchers::{header, header_exists, method, path},
+        matchers::{any, header, header_exists, method, path},
         Mock, MockServer, ResponseTemplate,
     };
 
@@ -96,9 +97,7 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn send_email_fires_request_to_email_server() {
-        // given
+    async fn run_email_server() -> (MockServer, SubscriberEmailMessenger) {
         let email_server = MockServer::start().await;
         let sender: String = SafeEmail().fake();
 
@@ -117,6 +116,19 @@ mod tests {
             sender,
         );
 
+        (email_server, messenger)
+    }
+
+    #[tokio::test]
+    async fn send_email_fires_request_to_email_server() {
+        // given
+        let (email_server, messenger) = run_email_server().await;
+
+        let subscriber =
+            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+        let subject: String = Sentence(1..2).fake();
+        let content: String = Paragraph(1..10).fake();
+
         Mock::given(path("/email"))
             .and(header_exists(reqwest::header::AUTHORIZATION))
             .and(header(reqwest::header::CONTENT_TYPE, "application/json"))
@@ -128,11 +140,6 @@ mod tests {
             .await;
 
         // when
-        let subscriber =
-            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
-        let subject: String = Sentence(1..2).fake();
-        let content: String = Paragraph(1..10).fake();
-
         messenger
             .send(&subscriber, &subject, &content)
             .await
@@ -140,5 +147,28 @@ mod tests {
 
         // then
         // no error is expected
+    }
+
+    #[tokio::test]
+    async fn send_email_succeeds_if_server_returns_200() {
+        // given
+        let (email_server, messenger) = run_email_server().await;
+
+        let subscriber =
+            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+        let subject: String = Sentence(1..2).fake();
+        let content: String = Paragraph(1..10).fake();
+
+        Mock::given(any())
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&email_server)
+            .await;
+
+        // when
+        let response = messenger.send(&subscriber, &subject, &content).await;
+
+        // then
+        assert_ok!(response);
     }
 }
