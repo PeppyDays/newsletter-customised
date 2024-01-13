@@ -29,7 +29,7 @@ async fn subscription_with_valid_form_returns_201() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(saved_subscriber.email.as_str(), email.as_str());
+    assert_eq!(saved_subscriber.email.as_ref(), email);
     assert_eq!(saved_subscriber.name.as_ref(), name);
 }
 

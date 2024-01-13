@@ -5,15 +5,29 @@ use crate::domain::subscriber::error::SubscriberError;
 #[derive(Debug)]
 pub struct Subscriber {
     pub id: Uuid,
-    pub email: String,
+    pub email: SubscriberEmail,
     pub name: SubscriberName,
+    pub status: SubscriberStatus,
 }
 
 impl Subscriber {
     pub fn new(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
         let name = SubscriberName::parse(name)?;
-        Ok(Self { id, email, name })
+        let email = SubscriberEmail::parse(email)?;
+
+        Ok(Self {
+            id,
+            email,
+            name,
+            status: SubscriberStatus::Unconfirmed,
+        })
     }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub enum SubscriberStatus {
+    Confirmed,
+    Unconfirmed,
 }
 
 #[derive(Debug, PartialEq)]

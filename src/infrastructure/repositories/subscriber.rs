@@ -3,22 +3,26 @@ use sqlx::{postgres::PgRow, Executor, Pool, Postgres, Row};
 use uuid::Uuid;
 
 use crate::domain::subscriber::error::SubscriberError;
-use crate::domain::subscriber::model::Subscriber;
+use crate::domain::subscriber::model::{
+    Subscriber, SubscriberEmail, SubscriberName, SubscriberStatus,
+};
 use crate::domain::subscriber::repository::SubscriberRepository;
 
 struct SubscriberDataModel {
     id: Uuid,
     email: String,
     name: String,
+    status: String,
     subscribed_at: DateTime<Utc>,
 }
 
 impl SubscriberDataModel {
-    pub fn new(id: Uuid, email: String, name: String) -> Self {
+    pub fn new(id: Uuid, email: String, name: String, status: String) -> Self {
         Self {
             id,
             email,
             name,
+            status,
             subscribed_at: Utc::now(),
         }
     }
@@ -29,8 +33,12 @@ impl From<&Subscriber> for SubscriberDataModel {
     fn from(subscriber: &Subscriber) -> Self {
         Self::new(
             subscriber.id,
-            subscriber.email.clone(),
+            subscriber.email.as_ref().to_string(),
             subscriber.name.as_ref().to_string(),
+            match subscriber.status {
+                SubscriberStatus::Confirmed => "Confirmed".to_string(),
+                SubscriberStatus::Unconfirmed => "Unconfirmed".to_string(),
+            },
         )
     }
 }
@@ -41,7 +49,8 @@ impl From<&PgRow> for SubscriberDataModel {
             id: row.get(0),
             email: row.get(1),
             name: row.get(2),
-            subscribed_at: row.get(3),
+            status: row.get(3),
+            subscribed_at: row.get(4),
         }
     }
 }
@@ -50,7 +59,22 @@ impl TryFrom<SubscriberDataModel> for Subscriber {
     type Error = SubscriberError;
 
     fn try_from(data_model: SubscriberDataModel) -> Result<Self, Self::Error> {
-        Self::new(data_model.id, data_model.email, data_model.name)
+        let email = SubscriberEmail::parse(data_model.email)?;
+        let name = SubscriberName::parse(data_model.name)?;
+        let status = match data_model.status.as_ref() {
+            "Confirmed" => Ok(SubscriberStatus::Confirmed),
+            "Unconfirmed" => Ok(SubscriberStatus::Unconfirmed),
+            _ => Err(SubscriberError::RepositoryOperationFailed(anyhow::anyhow!(
+                "Failed to parse as SubscriberStatus",
+            ))),
+        }?;
+
+        Ok(Self {
+            id: data_model.id,
+            email,
+            name,
+            status,
+        })
     }
 }
 
@@ -71,11 +95,12 @@ impl SubscriberRepository for SubscriberPostgresRepository {
     async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
         let data_model = SubscriberDataModel::from(subscriber);
         let query = sqlx::query!(
-            "INSERT INTO subscribers (id, email, name, subscribed_at) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO subscribers (id, email, name, subscribed_at, status) VALUES ($1, $2, $3, $4, $5)",
             data_model.id,
             data_model.email,
             data_model.name,
             data_model.subscribed_at,
+            data_model.status,
         );
 
         self.pool
@@ -92,7 +117,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
     #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
         let query = sqlx::query!(
-            "SELECT id, email, name, subscribed_at FROM subscribers WHERE id = $1",
+            "SELECT id, email, name, status, subscribed_at FROM subscribers WHERE id = $1",
             id
         );
 
@@ -115,7 +140,7 @@ impl SubscriberRepository for SubscriberPostgresRepository {
     #[tracing::instrument(name = "Searching subscriber details by email", skip(self))]
     async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError> {
         let query = sqlx::query!(
-            "SELECT id, email, name, subscribed_at FROM subscribers WHERE email = $1",
+            "SELECT id, email, name, status, subscribed_at FROM subscribers WHERE email = $1",
             email
         );
 
@@ -177,6 +202,7 @@ mod tests {
         assert_eq!(saved_subscriber.id, subscriber.id);
         assert_eq!(saved_subscriber.email, subscriber.email);
         assert_eq!(saved_subscriber.name, subscriber.name);
+        assert_eq!(saved_subscriber.status, subscriber.status);
     }
 
     #[tokio::test]
