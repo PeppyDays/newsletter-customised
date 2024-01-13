@@ -35,6 +35,7 @@ impl From<&Subscriber> for SubscriberDataModel {
             subscriber.id,
             subscriber.email.as_ref().to_string(),
             subscriber.name.as_ref().to_string(),
+            // TODO: Implement elegant enum in domain to string in data model mapping
             match subscriber.status {
                 SubscriberStatus::Confirmed => "Confirmed".to_string(),
                 SubscriberStatus::Unconfirmed => "Unconfirmed".to_string(),
