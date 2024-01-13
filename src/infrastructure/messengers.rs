@@ -50,6 +50,7 @@ impl SubscriberMessenger for SubscriberEmailMessenger {
 }
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "PascalCase")]
 struct Request<'a> {
     sender: &'a str,
     recipient: &'a str,
@@ -78,6 +79,23 @@ mod tests {
         infrastructure::messengers::SubscriberEmailMessenger,
     };
 
+    struct SendEmailBodyMatcher;
+
+    impl wiremock::Match for SendEmailBodyMatcher {
+        fn matches(&self, request: &wiremock::Request) -> bool {
+            let result: Result<serde_json::Value, _> = serde_json::from_slice(&request.body);
+
+            if let Ok(body) = result {
+                body.get("Sender").is_some()
+                    && body.get("Recipient").is_some()
+                    && body.get("Subject").is_some()
+                    && body.get("Content").is_some()
+            } else {
+                false
+            }
+        }
+    }
+
     #[tokio::test]
     async fn send_email_fires_request_to_email_server() {
         // given
@@ -103,6 +121,7 @@ mod tests {
             .and(header_exists(reqwest::header::AUTHORIZATION))
             .and(header(reqwest::header::CONTENT_TYPE, "application/json"))
             .and(method("POST"))
+            .and(SendEmailBodyMatcher)
             .respond_with(ResponseTemplate::new(200))
             .expect(1)
             .mount(&email_server)
