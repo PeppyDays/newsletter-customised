@@ -19,6 +19,7 @@ database:
 messenger:
   email:
     host: http://127.0.0.1
+    api_key: welcome
     sender: newsletter@example.com
   pool_options:
     connection_timeout: 3 # seconds

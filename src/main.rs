@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use secrecy::ExposeSecret;
+
 use newsletter::api;
 use newsletter::configuration;
 use newsletter::infrastructure::messengers;
@@ -36,8 +38,18 @@ async fn main() {
     );
 
     // configure email service client for messenger
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        reqwest::header::AUTHORIZATION,
+        reqwest::header::HeaderValue::from_str(
+            configuration.messenger.email.api_key.expose_secret(),
+        )
+        .expect("Failed to parse email server's API key"),
+    );
+
     let subscriber_messenger = messengers::SubscriberEmailMessenger::new(
         reqwest::Client::builder()
+            .default_headers(headers)
             .timeout(Duration::from_secs(
                 configuration.messenger.pool_options.connection_timeout,
             ))

@@ -9,6 +9,9 @@ pub enum SubscriberError {
     #[error("Failed to operate on repository")]
     RepositoryOperationFailed(#[source] anyhow::Error),
 
+    #[error("Failed to send a message through messenger")]
+    MessengerOperationFailed(#[source] anyhow::Error),
+    // MessengerOperationFailed(#[source] Box<dyn std::error::Error>),
     #[error("Failed unexpectedly")]
     Unexpected(#[source] anyhow::Error),
 }

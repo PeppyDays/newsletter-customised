@@ -87,6 +87,7 @@ pub struct MessengerConfiguration {
 #[derive(Debug, Config)]
 pub struct EmailService {
     pub host: String,
+    pub api_key: Secret<String>,
     pub sender: String,
 }
 
