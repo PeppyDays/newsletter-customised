@@ -1,22 +1,11 @@
-use chrono::{
-    DateTime,
-    Utc,
-};
+use chrono::{DateTime, Utc};
 use sqlx::postgres::PgRow;
-use sqlx::{
-    Executor,
-    Pool,
-    Postgres,
-    Row,
-};
+use sqlx::{Executor, Pool, Postgres, Row};
 use uuid::Uuid;
 
 use crate::domain::subscription::subscriber::error::SubscriberError;
 use crate::domain::subscription::subscriber::model::{
-    Subscriber,
-    SubscriberEmail,
-    SubscriberName,
-    SubscriberStatus,
+    Subscriber, SubscriberEmail, SubscriberName, SubscriberStatus,
 };
 use crate::domain::subscription::subscriber::repository::SubscriberRepository;
 
@@ -201,9 +190,12 @@ mod tests {
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
     use fake::Fake;
+    use uuid::Uuid;
 
     use crate::configuration::*;
-    use crate::infrastructure::repositories::subscriber::*;
+    use crate::domain::subscription::subscriber::model::Subscriber;
+    use crate::domain::subscription::subscriber::repository::SubscriberRepository;
+    use crate::infrastructure::subscription::subscriber::*;
 
     async fn get_repository() -> SubscriberPostgresRepository {
         let configuration = get_configuration().await;

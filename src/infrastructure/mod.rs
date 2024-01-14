@@ -1,2 +1,1 @@
-pub mod messengers;
-pub mod repositories;
+pub mod subscription;

@@ -1,15 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use newsletter::infrastructure::{
-    messengers,
-    repositories,
-};
-use newsletter::{
-    api,
-    configuration,
-    telemetry,
-};
+use newsletter::{api, configuration, infrastructure, telemetry};
 use secrecy::ExposeSecret;
 
 #[tokio::main]
@@ -39,9 +31,13 @@ async fn main() {
         .expect("Failed to create repository connection pool");
 
     let subscriber_repository =
-        repositories::SubscriberPostgresRepository::new(database_connection_pool.clone());
+        infrastructure::subscription::subscriber::SubscriberPostgresRepository::new(
+            database_connection_pool.clone(),
+        );
     let subscription_token_repository =
-        repositories::SubscriptionTokenPostgresRepository::new(database_connection_pool.clone());
+        infrastructure::subscription::subscription_token::SubscriptionTokenPostgresRepository::new(
+            database_connection_pool.clone(),
+        );
 
     // configure email service client for messenger
     let mut headers = reqwest::header::HeaderMap::new();
@@ -53,21 +49,22 @@ async fn main() {
         .expect("Failed to parse email server's API key"),
     );
 
-    let subscriber_messenger = messengers::SubscriberEmailMessenger::new(
-        reqwest::Client::builder()
-            .default_headers(headers)
-            .timeout(Duration::from_secs(
-                configuration.messenger.pool_options.connection_timeout,
-            ))
-            .connect_timeout(Duration::from_secs(
-                configuration.messenger.pool_options.request_timeout,
-            ))
-            .build()
-            .expect("Failed to create email client pool"),
-        reqwest::Url::parse(configuration.messenger.email.url.as_ref())
-            .expect("Failed to parse email server's URL"),
-        configuration.messenger.email.sender,
-    );
+    let subscriber_messenger =
+        infrastructure::subscription::subscriber::SubscriberEmailMessenger::new(
+            reqwest::Client::builder()
+                .default_headers(headers)
+                .timeout(Duration::from_secs(
+                    configuration.messenger.pool_options.connection_timeout,
+                ))
+                .connect_timeout(Duration::from_secs(
+                    configuration.messenger.pool_options.request_timeout,
+                ))
+                .build()
+                .expect("Failed to create email client pool"),
+            reqwest::Url::parse(configuration.messenger.email.url.as_ref())
+                .expect("Failed to parse email server's URL"),
+            configuration.messenger.email.sender,
+        );
 
     // configure container which of the application context
     let container = api::runner::Container {

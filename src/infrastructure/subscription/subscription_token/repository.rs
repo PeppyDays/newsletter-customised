@@ -1,14 +1,6 @@
-use chrono::{
-    DateTime,
-    Utc,
-};
+use chrono::{DateTime, Utc};
 use sqlx::postgres::PgRow;
-use sqlx::{
-    Executor,
-    Pool,
-    Postgres,
-    Row,
-};
+use sqlx::{Executor, Pool, Postgres, Row};
 use uuid::Uuid;
 
 use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
@@ -148,7 +140,7 @@ mod tests {
     use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
     use crate::domain::subscription::subscription_token::model::SubscriptionToken;
     use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
-    use crate::infrastructure::repositories::SubscriptionTokenPostgresRepository;
+    use crate::infrastructure::subscription::subscription_token::SubscriptionTokenPostgresRepository;
 
     async fn get_repository() -> SubscriptionTokenPostgresRepository {
         let configuration = get_configuration().await;

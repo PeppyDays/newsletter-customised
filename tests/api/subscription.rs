@@ -4,14 +4,8 @@ use fake::Fake;
 use newsletter::domain::subscription::subscriber::model::SubscriberStatus;
 use newsletter::domain::subscription::subscriber::repository::SubscriberRepository;
 use reqwest::StatusCode;
-use wiremock::matchers::{
-    method,
-    path,
-};
-use wiremock::{
-    Mock,
-    ResponseTemplate,
-};
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, ResponseTemplate};
 
 use crate::api::helper::app::App;
 
@@ -162,7 +156,7 @@ async fn subscriber_is_confirmed_after_clicking_confirmation_link() {
         .unwrap()
         .split("/subscriptions/confirm?token=")
         .collect::<Vec<&str>>()[1]
-        .split("\"")
+        .split('"')
         .collect::<Vec<&str>>()[0];
 
     let parameters = [("token", token)];
