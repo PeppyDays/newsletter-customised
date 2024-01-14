@@ -65,7 +65,7 @@ impl App {
 
         // start an email server
         let email_server = MockServer::start().await;
-        configuration.messenger.email.host = email_server.uri();
+        configuration.messenger.email.url = email_server.uri();
 
         // randomise database for data isolation
         let database_postfix = 10.fake::<String>();
@@ -112,7 +112,7 @@ impl App {
                 ))
                 .build()
                 .expect("Failed to create email client pool"),
-            reqwest::Url::parse(configuration.messenger.email.host.as_ref()).unwrap(),
+            reqwest::Url::parse(configuration.messenger.email.url.as_ref()).unwrap(),
             configuration.messenger.email.sender,
         );
 

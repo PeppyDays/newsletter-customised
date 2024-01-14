@@ -18,6 +18,8 @@ pub struct Configuration {
 pub struct ApplicationConfiguration {
     #[config(nested)]
     pub listening_address: ApplicationListeningAddress,
+    #[config(nested)]
+    pub exposing_address: ApplicationExposingAddress,
 }
 
 #[derive(Debug, Config)]
@@ -26,6 +28,12 @@ pub struct ApplicationListeningAddress {
     pub host: String,
     #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_PORT")]
     pub port: u16,
+}
+
+#[derive(Debug, Config)]
+pub struct ApplicationExposingAddress {
+    #[config(env = "APP_APPLICATION_EXPOSING_ADDRESS_URL")]
+    pub url: String,
 }
 
 #[derive(Debug, Config)]
@@ -86,7 +94,7 @@ pub struct MessengerConfiguration {
 
 #[derive(Debug, Config)]
 pub struct EmailService {
-    pub host: String,
+    pub url: String,
     pub api_key: Secret<String>,
     pub sender: String,
 }

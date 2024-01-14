@@ -2,6 +2,8 @@ application:
   listening_address:
     host: 127.0.0.1
     port: 8080
+  exposing_address:
+    url: http://127.0.0.1
 
 database:
   source:
@@ -18,7 +20,7 @@ database:
 
 messenger:
   email:
-    host: http://127.0.0.1
+    url: http://127.0.0.1
     api_key: welcome
     sender: newsletter@example.com
   pool_options:

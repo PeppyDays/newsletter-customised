@@ -58,7 +58,7 @@ async fn main() {
             ))
             .build()
             .expect("Failed to create email client pool"),
-        reqwest::Url::parse(configuration.messenger.email.host.as_ref())
+        reqwest::Url::parse(configuration.messenger.email.url.as_ref())
             .expect("Failed to parse email server's URL"),
         configuration.messenger.email.sender,
     );
