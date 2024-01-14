@@ -6,7 +6,6 @@ use std::{
 
 use fake::Fake;
 use once_cell::sync::Lazy;
-use reqwest::Client;
 use serde::Serialize;
 use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
@@ -15,7 +14,8 @@ use wiremock::MockServer;
 use newsletter::{
     api, configuration,
     infrastructure::{
-        messengers::SubscriberEmailMessenger, repositories::SubscriberPostgresRepository,
+        messengers::SubscriberEmailMessenger,
+        repositories::{SubscriberPostgresRepository, SubscriptionTokenPostgresRepository},
     },
     telemetry,
 };
@@ -41,11 +41,13 @@ pub struct App {
     // application address
     pub address: SocketAddr,
     // reqwest client for checking API calls from external client
-    pub client: Client,
+    pub client: reqwest::Client,
     // mock server for checking email calls from application
     pub email_server: Arc<MockServer>,
     // subscriber repository for checking data in the database
     pub subscriber_repository: Arc<SubscriberPostgresRepository>,
+    // subscription token repository for checking data in the database
+    pub subscription_token_repository: Arc<SubscriptionTokenPostgresRepository>,
 }
 
 // create a test application
@@ -99,7 +101,8 @@ impl App {
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
         // create repository
-        let subscriber_repository = SubscriberPostgresRepository::new(pool);
+        let subscriber_repository = SubscriberPostgresRepository::new(pool.clone());
+        let subscription_token_repository = SubscriptionTokenPostgresRepository::new(pool.clone());
 
         // create email messenger
         let subscriber_messenger = SubscriberEmailMessenger::new(
@@ -119,12 +122,13 @@ impl App {
         // create container for application context
         let container = api::runner::Container {
             subscriber_repository: Arc::new(subscriber_repository.clone()),
+            subscription_token_repository: Arc::new(subscription_token_repository.clone()),
             subscriber_messenger: Arc::new(subscriber_messenger.clone()),
             exposing_address: Arc::new(configuration.application.exposing_address),
         };
 
         // create http client for accessing application APIs
-        let client = Client::new();
+        let client = reqwest::Client::new();
 
         tokio::spawn(api::runner::run(listener, container));
 
@@ -133,18 +137,35 @@ impl App {
             client,
             email_server: Arc::new(email_server),
             subscriber_repository: Arc::new(subscriber_repository),
+            subscription_token_repository: Arc::new(subscription_token_repository),
         }
     }
 }
 
 // simplify application call testing
 impl App {
-    // POST /subscribe
+    // POST /subscription/subscribe
+    // TODO: Modify parameters to the form
     pub async fn post_subscribe<T: Serialize + ?Sized>(&self, parameters: &T) -> reqwest::Response {
-        let url = format!("http://{}/subscribe", self.address);
+        let url = format!("http://{}/subscription/subscribe", self.address);
         self.client
             .post(url)
             .form(&parameters)
+            .send()
+            .await
+            .unwrap()
+    }
+
+    // GET /subscription/confirm
+    // TODO: Modify parameters argument to the token
+    pub async fn get_subscription_confirm<T: Serialize + ?Sized>(
+        &self,
+        parameters: &T,
+    ) -> reqwest::Response {
+        let url = format!("http://{}/subscription/confirm", self.address);
+        self.client
+            .get(url)
+            .query(&parameters)
             .send()
             .await
             .unwrap()

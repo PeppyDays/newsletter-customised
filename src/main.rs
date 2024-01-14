@@ -25,17 +25,20 @@ async fn main() {
     let listener = configuration::bind_listener(&configuration).await;
 
     // configure database connection pool
-    let subscriber_repository = repositories::SubscriberPostgresRepository::new(
-        sqlx::postgres::PgPoolOptions::new()
-            .min_connections(configuration.database.pool_options.min_connections)
-            .max_connections(configuration.database.pool_options.max_connections)
-            .acquire_timeout(std::time::Duration::from_secs(
-                configuration.database.pool_options.acquire_timeout,
-            ))
-            .connect(&configuration.database.connection_string_without_database())
-            .await
-            .expect("Failed to create repository connection pool"),
-    );
+    let database_connection_pool = sqlx::postgres::PgPoolOptions::new()
+        .min_connections(configuration.database.pool_options.min_connections)
+        .max_connections(configuration.database.pool_options.max_connections)
+        .acquire_timeout(std::time::Duration::from_secs(
+            configuration.database.pool_options.acquire_timeout,
+        ))
+        .connect(&configuration.database.connection_string_without_database())
+        .await
+        .expect("Failed to create repository connection pool");
+
+    let subscriber_repository =
+        repositories::SubscriberPostgresRepository::new(database_connection_pool.clone());
+    let subscription_token_repository =
+        repositories::SubscriptionTokenPostgresRepository::new(database_connection_pool.clone());
 
     // configure email service client for messenger
     let mut headers = reqwest::header::HeaderMap::new();
@@ -66,6 +69,7 @@ async fn main() {
     // configure container which of the application context
     let container = api::runner::Container {
         subscriber_repository: Arc::new(subscriber_repository),
+        subscription_token_repository: Arc::new(subscription_token_repository),
         subscriber_messenger: Arc::new(subscriber_messenger),
         exposing_address: Arc::new(configuration.application.exposing_address),
     };

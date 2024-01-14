@@ -37,17 +37,24 @@ pub async fn handle(
             }
         })?;
 
-    let subscription_token = SubscriptionToken::issue(subscriber.id);
-    let subscription_confirmation_url = format!(
-        "{}/subscriptions/confirm?subscription_token={}",
-        "http://localhost:3000", subscription_token.token,
-    );
-
     container
         .subscriber_repository
         .save(&subscriber)
         .await
         .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
+
+    let subscription_token = SubscriptionToken::issue(subscriber.id);
+
+    container
+        .subscription_token_repository
+        .save(&subscription_token)
+        .await
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
+
+    let subscription_confirmation_url = format!(
+        "{}/subscriptions/confirm?token={}",
+        container.exposing_address.url, subscription_token.token,
+    );
 
     container
         .subscriber_messenger
@@ -56,7 +63,7 @@ pub async fn handle(
             "Welcome to our newsletter!",
             &format!(
                 r#"Welcome to our newsletter! Click <a href="{}">here</a> to confirm your subscription."#,
-                ""
+                subscription_confirmation_url,
             ),
         )
         .await

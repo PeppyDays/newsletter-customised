@@ -7,10 +7,12 @@ use crate::configuration::ApplicationExposingAddress;
 use crate::domain::subscription::subscriber::{
     messenger::SubscriberMessenger, repository::SubscriberRepository,
 };
+use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
 
 #[derive(Clone)]
 pub struct Container {
     pub subscriber_repository: Arc<dyn SubscriberRepository>,
+    pub subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
     pub subscriber_messenger: Arc<dyn SubscriberMessenger>,
     pub exposing_address: Arc<ApplicationExposingAddress>,
 }

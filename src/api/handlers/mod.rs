@@ -1,2 +1,2 @@
-pub mod check_health;
-pub mod subscribe;
+pub mod health;
+pub mod subscription;

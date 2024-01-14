@@ -115,6 +115,28 @@ impl SubscriberRepository for SubscriberPostgresRepository {
         Ok(())
     }
 
+    #[tracing::instrument(name = "Updating subscriber details", skip(self))]
+    async fn update(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
+        let data_model = SubscriberDataModel::from(subscriber);
+        let query = sqlx::query!(
+            "UPDATE subscribers SET email = $2, name = $3, status = $4 WHERE id = $1",
+            data_model.id,
+            data_model.email,
+            data_model.name,
+            data_model.status,
+        );
+
+        self.pool
+            .acquire()
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .execute(query)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
+
+        Ok(())
+    }
+
     #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
         let query = sqlx::query!(

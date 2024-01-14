@@ -7,14 +7,18 @@ use axum::{
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::api::handlers::{check_health, subscribe};
+use crate::api::handlers::{health, subscription};
 use crate::api::runner::Container;
 
 pub async fn get_router(container: Container) -> Router {
     Router::new()
-        .route("/subscribe", post(subscribe::handle))
+        .route("/subscription/confirm", get(subscription::confirm::handle))
+        .route(
+            "/subscription/subscribe",
+            post(subscription::subscribe::handle),
+        )
         .with_state(container)
-        .route("/", get(check_health::handle))
+        .route("/", get(health::check::handle))
         .layer(
             // Refer to https://github.com/tokio-rs/axum/blob/main/examples/tracing-aka-logging/Cargo.toml
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

@@ -22,6 +22,10 @@ impl Subscriber {
             status: SubscriberStatus::Unconfirmed,
         })
     }
+
+    pub fn confirm(&mut self) {
+        self.status = SubscriberStatus::Confirmed;
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -125,6 +129,7 @@ mod tests {
         let email = "@gmail.com".to_string();
         assert_err!(SubscriberEmail::parse(email));
     }
+
     #[test]
     fn short_names_are_rejected() {
         let name = "a".repeat(SubscriberName::NAME_MIN_LENGTH - 1);

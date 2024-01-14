@@ -2,13 +2,14 @@ use fake::{
     faker::{internet::en::SafeEmail, name::en::FirstName},
     Fake,
 };
+use newsletter::domain::subscription::subscriber::model::SubscriberStatus;
 use reqwest::StatusCode;
-
-use newsletter::domain::subscription::subscriber::repository::SubscriberRepository;
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
 };
+
+use newsletter::domain::subscription::subscriber::repository::SubscriberRepository;
 
 use crate::api::helper::app::App;
 
@@ -106,6 +107,7 @@ async fn subscription_sends_confirmation_email_for_validate_email_address() {
 
 #[tokio::test]
 async fn subscription_sends_confirmation_email_with_link() {
+    // given
     let app = App::new().await;
 
     let email: String = SafeEmail().fake();
@@ -130,4 +132,50 @@ async fn subscription_sends_confirmation_email_with_link() {
         .as_str()
         .unwrap()
         .contains("/subscriptions/confirm?token="));
+}
+
+#[tokio::test]
+async fn subscriber_is_confirmed_after_clicking_confirmation_link() {
+    // given
+    let app = App::new().await;
+
+    let email: String = SafeEmail().fake();
+    let name: String = FirstName().fake();
+    let parameters = [("email", email.as_str()), ("name", name.as_str())];
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&app.email_server)
+        .await;
+
+    app.post_subscribe(&parameters).await;
+
+    // when
+    let request = &app.email_server.received_requests().await.unwrap()[0];
+    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+    let content = body.get("Content").unwrap();
+    let token = content
+        .as_str()
+        .unwrap()
+        .split("/subscriptions/confirm?token=")
+        .collect::<Vec<&str>>()[1]
+        .split("\"")
+        .collect::<Vec<&str>>()[0];
+
+    let parameters = [("token", token)];
+    app.get_subscription_confirm(&parameters).await;
+
+    // then
+    let saved_subscriber = app
+        .subscriber_repository
+        .find_by_email(email.as_str())
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert!(matches!(
+        saved_subscriber.status,
+        SubscriberStatus::Confirmed,
+    ));
 }
