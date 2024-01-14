@@ -1,6 +1,10 @@
 use std::ops::Add;
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{
+    DateTime,
+    Duration,
+    Utc,
+};
 use uuid::Uuid;
 
 #[derive(Debug)]

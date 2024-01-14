@@ -1,10 +1,22 @@
-use chrono::{DateTime, Utc};
-use sqlx::{postgres::PgRow, Executor, Pool, Postgres, Row};
+use chrono::{
+    DateTime,
+    Utc,
+};
+use sqlx::postgres::PgRow;
+use sqlx::{
+    Executor,
+    Pool,
+    Postgres,
+    Row,
+};
 use uuid::Uuid;
 
 use crate::domain::subscription::subscriber::error::SubscriberError;
 use crate::domain::subscription::subscriber::model::{
-    Subscriber, SubscriberEmail, SubscriberName, SubscriberStatus,
+    Subscriber,
+    SubscriberEmail,
+    SubscriberName,
+    SubscriberStatus,
 };
 use crate::domain::subscription::subscriber::repository::SubscriberRepository;
 

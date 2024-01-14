@@ -1,24 +1,31 @@
-use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    sync::Arc,
-    time::Duration,
+use std::net::{
+    Ipv4Addr,
+    SocketAddr,
+    SocketAddrV4,
 };
+use std::sync::Arc;
+use std::time::Duration;
 
 use fake::Fake;
-use once_cell::sync::Lazy;
-use serde::Serialize;
-use sqlx::{Connection, Executor, PgConnection};
-use tokio::net::TcpListener;
-use wiremock::MockServer;
-
+use newsletter::infrastructure::messengers::SubscriberEmailMessenger;
+use newsletter::infrastructure::repositories::{
+    SubscriberPostgresRepository,
+    SubscriptionTokenPostgresRepository,
+};
 use newsletter::{
-    api, configuration,
-    infrastructure::{
-        messengers::SubscriberEmailMessenger,
-        repositories::{SubscriberPostgresRepository, SubscriptionTokenPostgresRepository},
-    },
+    api,
+    configuration,
     telemetry,
 };
+use once_cell::sync::Lazy;
+use serde::Serialize;
+use sqlx::{
+    Connection,
+    Executor,
+    PgConnection,
+};
+use tokio::net::TcpListener;
+use wiremock::MockServer;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info";

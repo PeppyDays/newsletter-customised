@@ -1,11 +1,19 @@
-use chrono::{DateTime, Utc};
-use sqlx::{postgres::PgRow, Executor, Pool, Postgres, Row};
+use chrono::{
+    DateTime,
+    Utc,
+};
+use sqlx::postgres::PgRow;
+use sqlx::{
+    Executor,
+    Pool,
+    Postgres,
+    Row,
+};
 use uuid::Uuid;
 
-use crate::domain::subscription::subscription_token::{
-    error::SubscriptionTokenError, model::SubscriptionToken,
-    repository::SubscriptionTokenRepository,
-};
+use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
+use crate::domain::subscription::subscription_token::model::SubscriptionToken;
+use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
 
 struct SubscriptionTokenDataModel {
     token: String,

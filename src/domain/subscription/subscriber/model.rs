@@ -90,11 +90,19 @@ impl AsRef<str> for SubscriberName {
 
 #[cfg(test)]
 mod tests {
-    use claims::{assert_err, assert_ok};
-    use fake::{faker::internet::en::SafeEmail, Fake};
-    use rand::{rngs::StdRng, SeedableRng};
+    use claims::{
+        assert_err,
+        assert_ok,
+    };
+    use fake::faker::internet::en::SafeEmail;
+    use fake::Fake;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
-    use crate::domain::subscription::subscriber::model::{SubscriberEmail, SubscriberName};
+    use crate::domain::subscription::subscriber::model::{
+        SubscriberEmail,
+        SubscriberName,
+    };
 
     #[derive(Debug, Clone)]
     struct ValidEmailFixture(pub String);

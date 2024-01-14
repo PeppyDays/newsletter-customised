@@ -1,8 +1,7 @@
 use uuid::Uuid;
 
-use crate::domain::subscription::subscriber::model::Subscriber;
-
 use super::error::SubscriberError;
+use crate::domain::subscription::subscriber::model::Subscriber;
 
 #[async_trait::async_trait]
 pub trait SubscriberRepository: Send + Sync {

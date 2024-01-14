@@ -1,13 +1,13 @@
-use axum::{extract::State, http::StatusCode, Form};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::Form;
 use uuid::Uuid;
 
-use crate::{
-    api::{error::ApiError, runner::Container},
-    domain::subscription::{
-        subscriber::{error::SubscriberError, model::Subscriber},
-        subscription_token::model::SubscriptionToken,
-    },
-};
+use crate::api::error::ApiError;
+use crate::api::runner::Container;
+use crate::domain::subscription::subscriber::error::SubscriberError;
+use crate::domain::subscription::subscriber::model::Subscriber;
+use crate::domain::subscription::subscription_token::model::SubscriptionToken;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Request {

@@ -1,6 +1,6 @@
-use crate::domain::subscription::subscriber::{
-    error::SubscriberError, messenger::SubscriberMessenger, model::Subscriber,
-};
+use crate::domain::subscription::subscriber::error::SubscriberError;
+use crate::domain::subscription::subscriber::messenger::SubscriberMessenger;
+use crate::domain::subscription::subscriber::model::Subscriber;
 
 #[derive(Clone)]
 pub struct SubscriberEmailMessenger {
@@ -63,25 +63,34 @@ struct Request<'a> {
 
 #[cfg(test)]
 mod tests {
-    use claims::{assert_err, assert_ok};
-    use fake::{
-        faker::{
-            internet::en::SafeEmail,
-            lorem::en::{Paragraph, Sentence},
-            name::en::FirstName,
-        },
-        Fake,
+    use claims::{
+        assert_err,
+        assert_ok,
     };
+    use fake::faker::internet::en::SafeEmail;
+    use fake::faker::lorem::en::{
+        Paragraph,
+        Sentence,
+    };
+    use fake::faker::name::en::FirstName;
+    use fake::Fake;
     use uuid::Uuid;
+    use wiremock::matchers::{
+        any,
+        header,
+        header_exists,
+        method,
+        path,
+    };
     use wiremock::{
-        matchers::{any, header, header_exists, method, path},
-        Mock, MockServer, ResponseTemplate,
+        Mock,
+        MockServer,
+        ResponseTemplate,
     };
 
-    use crate::{
-        domain::subscription::subscriber::{messenger::SubscriberMessenger, model::Subscriber},
-        infrastructure::messengers::SubscriberEmailMessenger,
-    };
+    use crate::domain::subscription::subscriber::messenger::SubscriberMessenger;
+    use crate::domain::subscription::subscriber::model::Subscriber;
+    use crate::infrastructure::messengers::SubscriberEmailMessenger;
 
     struct SendEmailBodyMatcher;
 

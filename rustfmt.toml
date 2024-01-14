@@ -1,0 +1,10 @@
+unstable_features = true
+
+# optimize imports
+group_imports = "StdExternalCrate"
+imports_layout = "Vertical"
+imports_granularity = "Module"
+
+# normalize comments
+normalize_comments = true
+normalize_doc_attributes = true

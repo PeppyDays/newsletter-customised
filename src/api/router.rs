@@ -1,13 +1,17 @@
-use axum::{
-    extract::MatchedPath,
-    http::Request,
-    routing::{get, post},
-    Router,
+use axum::extract::MatchedPath;
+use axum::http::Request;
+use axum::routing::{
+    get,
+    post,
 };
+use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::api::handlers::{health, subscription};
+use crate::api::handlers::{
+    health,
+    subscription,
+};
 use crate::api::runner::Container;
 
 pub async fn get_router(container: Container) -> Router {

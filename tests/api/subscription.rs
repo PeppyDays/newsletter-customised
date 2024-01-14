@@ -1,15 +1,17 @@
-use fake::{
-    faker::{internet::en::SafeEmail, name::en::FirstName},
-    Fake,
-};
+use fake::faker::internet::en::SafeEmail;
+use fake::faker::name::en::FirstName;
+use fake::Fake;
 use newsletter::domain::subscription::subscriber::model::SubscriberStatus;
-use reqwest::StatusCode;
-use wiremock::{
-    matchers::{method, path},
-    Mock, ResponseTemplate,
-};
-
 use newsletter::domain::subscription::subscriber::repository::SubscriberRepository;
+use reqwest::StatusCode;
+use wiremock::matchers::{
+    method,
+    path,
+};
+use wiremock::{
+    Mock,
+    ResponseTemplate,
+};
 
 use crate::api::helper::app::App;
 
@@ -31,7 +33,7 @@ async fn subscription_with_valid_form_returns_201() {
     // when
     let response = app.post_subscribe(&parameters).await;
 
-    //then
+    // then
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let saved_subscriber = app

@@ -1,13 +1,16 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use newsletter::infrastructure::{
+    messengers,
+    repositories,
+};
+use newsletter::{
+    api,
+    configuration,
+    telemetry,
+};
 use secrecy::ExposeSecret;
-
-use newsletter::api;
-use newsletter::configuration;
-use newsletter::infrastructure::messengers;
-use newsletter::infrastructure::repositories;
-use newsletter::telemetry;
 
 #[tokio::main]
 async fn main() {
@@ -28,7 +31,7 @@ async fn main() {
     let database_connection_pool = sqlx::postgres::PgPoolOptions::new()
         .min_connections(configuration.database.pool_options.min_connections)
         .max_connections(configuration.database.pool_options.max_connections)
-        .acquire_timeout(std::time::Duration::from_secs(
+        .acquire_timeout(Duration::from_secs(
             configuration.database.pool_options.acquire_timeout,
         ))
         .connect(&configuration.database.connection_string_without_database())
