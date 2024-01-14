@@ -21,6 +21,7 @@ impl SubscriberEmailMessenger {
 
 #[async_trait::async_trait]
 impl SubscriberMessenger for SubscriberEmailMessenger {
+    #[tracing::instrument(name = "Sending an email for subscription", skip(self))]
     async fn send(
         &self,
         recipient: &Subscriber,
@@ -29,7 +30,7 @@ impl SubscriberMessenger for SubscriberEmailMessenger {
     ) -> Result<(), SubscriberError> {
         let url = self
             .host
-            .join("email")
+            .join("/email")
             .map_err(|error| SubscriberError::MessengerOperationFailed(error.into()))?;
         let body = Request {
             sender: self.sender.as_ref(),
