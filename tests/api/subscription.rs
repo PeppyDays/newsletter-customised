@@ -4,7 +4,11 @@ use fake::{
 };
 use reqwest::StatusCode;
 
-use newsletter::domain::subscriber::repository::SubscriberRepository;
+use newsletter::domain::subscription::subscriber::repository::SubscriberRepository;
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 use crate::api::helper::app::App;
 
@@ -16,6 +20,12 @@ async fn subscription_with_valid_form_returns_201() {
     let email: String = SafeEmail().fake();
     let name: String = FirstName().fake();
     let parameters = [("email", email.as_str()), ("name", name.as_str())];
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&app.email_server)
+        .await;
 
     // when
     let response = app.post_subscribe(&parameters).await;
@@ -69,4 +79,55 @@ async fn subscription_with_too_short_name_returns_400() {
         response.text().await.unwrap(),
         r#"{"error":"Subscriber's name is invalid"}"#,
     );
+}
+
+#[tokio::test]
+async fn subscription_sends_confirmation_email_for_validate_email_address() {
+    // given
+    let app = App::new().await;
+
+    let email: String = SafeEmail().fake();
+    let name: String = FirstName().fake();
+    let parameters = [("email", email.as_str()), ("name", name.as_str())];
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    // when
+    app.post_subscribe(&parameters).await;
+
+    // then
+    // mock asserts on drop
+}
+
+#[tokio::test]
+async fn subscription_sends_confirmation_email_with_link() {
+    let app = App::new().await;
+
+    let email: String = SafeEmail().fake();
+    let name: String = FirstName().fake();
+    let parameters = [("email", email.as_str()), ("name", name.as_str())];
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&app.email_server)
+        .await;
+
+    // when
+    app.post_subscribe(&parameters).await;
+
+    // then
+    let request = &app.email_server.received_requests().await.unwrap()[0];
+    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+    let content = body.get("Content").unwrap();
+
+    assert!(content
+        .as_str()
+        .unwrap()
+        .contains("/subscriptions/confirm?token="));
 }

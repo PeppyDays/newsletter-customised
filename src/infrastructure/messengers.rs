@@ -1,4 +1,4 @@
-use crate::domain::subscriber::{
+use crate::domain::subscription::subscriber::{
     error::SubscriberError, messenger::SubscriberMessenger, model::Subscriber,
 };
 
@@ -79,7 +79,7 @@ mod tests {
     };
 
     use crate::{
-        domain::subscriber::{messenger::SubscriberMessenger, model::Subscriber},
+        domain::subscription::subscriber::{messenger::SubscriberMessenger, model::Subscriber},
         infrastructure::messengers::SubscriberEmailMessenger,
     };
 

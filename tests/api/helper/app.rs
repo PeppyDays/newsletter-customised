@@ -120,6 +120,7 @@ impl App {
         let container = api::runner::Container {
             subscriber_repository: Arc::new(subscriber_repository.clone()),
             subscriber_messenger: Arc::new(subscriber_messenger.clone()),
+            exposing_address: Arc::new(configuration.application.exposing_address),
         };
 
         // create http client for accessing application APIs

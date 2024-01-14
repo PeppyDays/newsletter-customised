@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::domain::subscriber::model::Subscriber;
+use crate::domain::subscription::subscriber::model::Subscriber;
 
 use super::error::SubscriberError;
 

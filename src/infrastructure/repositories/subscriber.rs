@@ -2,11 +2,11 @@ use chrono::{DateTime, Utc};
 use sqlx::{postgres::PgRow, Executor, Pool, Postgres, Row};
 use uuid::Uuid;
 
-use crate::domain::subscriber::error::SubscriberError;
-use crate::domain::subscriber::model::{
+use crate::domain::subscription::subscriber::error::SubscriberError;
+use crate::domain::subscription::subscriber::model::{
     Subscriber, SubscriberEmail, SubscriberName, SubscriberStatus,
 };
-use crate::domain::subscriber::repository::SubscriberRepository;
+use crate::domain::subscription::subscriber::repository::SubscriberRepository;
 
 struct SubscriberDataModel {
     id: Uuid,

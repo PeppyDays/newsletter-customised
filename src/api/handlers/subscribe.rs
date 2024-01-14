@@ -3,7 +3,10 @@ use uuid::Uuid;
 
 use crate::{
     api::{error::ApiError, runner::Container},
-    domain::subscriber::{error::SubscriberError, model::Subscriber},
+    domain::subscription::{
+        subscriber::{error::SubscriberError, model::Subscriber},
+        subscription_token::model::SubscriptionToken,
+    },
 };
 
 #[derive(serde::Deserialize, Debug)]
@@ -34,9 +37,28 @@ pub async fn handle(
             }
         })?;
 
+    let subscription_token = SubscriptionToken::issue(subscriber.id);
+    let subscription_confirmation_url = format!(
+        "{}/subscriptions/confirm?subscription_token={}",
+        "http://localhost:3000", subscription_token.token,
+    );
+
     container
         .subscriber_repository
         .save(&subscriber)
+        .await
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
+
+    container
+        .subscriber_messenger
+        .send(
+            &subscriber,
+            "Welcome to our newsletter!",
+            &format!(
+                r#"Welcome to our newsletter! Click <a href="{}">here</a> to confirm your subscription."#,
+                ""
+            ),
+        )
         .await
         .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
 

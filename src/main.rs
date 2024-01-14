@@ -67,6 +67,7 @@ async fn main() {
     let container = api::runner::Container {
         subscriber_repository: Arc::new(subscriber_repository),
         subscriber_messenger: Arc::new(subscriber_messenger),
+        exposing_address: Arc::new(configuration.application.exposing_address),
     };
 
     api::runner::run(listener, container).await

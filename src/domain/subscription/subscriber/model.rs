@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::domain::subscriber::error::SubscriberError;
+use crate::domain::subscription::subscriber::error::SubscriberError;
 
 #[derive(Debug)]
 pub struct Subscriber {
@@ -90,7 +90,7 @@ mod tests {
     use fake::{faker::internet::en::SafeEmail, Fake};
     use rand::{rngs::StdRng, SeedableRng};
 
-    use crate::domain::subscriber::model::{SubscriberEmail, SubscriberName};
+    use crate::domain::subscription::subscriber::model::{SubscriberEmail, SubscriberName};
 
     #[derive(Debug, Clone)]
     struct ValidEmailFixture(pub String);
