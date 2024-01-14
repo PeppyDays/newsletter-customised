@@ -10,6 +10,7 @@ use reqwest::Client;
 use serde::Serialize;
 use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
+use wiremock::MockServer;
 
 use newsletter::{
     api, configuration,
@@ -18,7 +19,6 @@ use newsletter::{
     },
     telemetry,
 };
-use wiremock::MockServer;
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info";
@@ -62,6 +62,10 @@ impl App {
 
         // get and manipulate configuration
         let mut configuration = configuration::get_configuration().await;
+
+        // start an email server
+        let email_server = MockServer::start().await;
+        configuration.messenger.email.host = email_server.uri();
 
         // randomise database for data isolation
         let database_postfix = 10.fake::<String>();
@@ -120,10 +124,6 @@ impl App {
 
         // create http client for accessing application APIs
         let client = Client::new();
-
-        // start a server
-        let email_server = MockServer::start().await;
-        configuration.messenger.email.host = email_server.uri();
 
         tokio::spawn(api::runner::run(listener, container));
 
