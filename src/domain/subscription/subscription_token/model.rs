@@ -1,10 +1,6 @@
 use std::ops::Add;
 
-use chrono::{
-    DateTime,
-    Duration,
-    Utc,
-};
+use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -17,11 +13,11 @@ pub struct SubscriptionToken {
 }
 
 impl SubscriptionToken {
+    const EXPIRATION_DURATION_IN_HOURS: i64 = 1;
+
     pub fn issue(subscriber_id: Uuid) -> Self {
-        // TODO: Separate token generation logic from this model
-        // TODO: Make token expiration duration configurable
         let token = Uuid::new_v4().to_string();
-        let expiration_duration = Duration::hours(1);
+        let expiration_duration = Duration::hours(Self::EXPIRATION_DURATION_IN_HOURS);
 
         Self {
             token,
