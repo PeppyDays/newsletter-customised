@@ -140,7 +140,6 @@ impl App {
 // simplify application call testing
 impl App {
     // POST /subscription/subscribe
-    // TODO: Modify parameters to the form
     pub async fn post_subscribe<T: Serialize + ?Sized>(&self, parameters: &T) -> reqwest::Response {
         let url = format!("http://{}/subscription/subscribe", self.address);
         self.client
@@ -152,7 +151,6 @@ impl App {
     }
 
     // GET /subscription/confirm
-    // TODO: Modify parameters argument to the token
     pub async fn get_subscription_confirm<T: Serialize + ?Sized>(
         &self,
         parameters: &T,
