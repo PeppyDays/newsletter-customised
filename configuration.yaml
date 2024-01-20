@@ -16,7 +16,7 @@ database:
   pool_options:
     min_connections: 2
     max_connections: 2
-    acquire_timeout: 3 # seconds
+    connect_timeout: 3 # seconds
 
 messenger:
   email:

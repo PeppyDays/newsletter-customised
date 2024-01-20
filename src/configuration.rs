@@ -1,8 +1,5 @@
 use confique::Config;
-use secrecy::{
-    ExposeSecret,
-    Secret,
-};
+use secrecy::{ExposeSecret, Secret};
 use tokio::net::TcpListener;
 
 #[derive(Debug, Config)]
@@ -65,7 +62,7 @@ pub struct DatabaseSource {
 pub struct DatabasePoolOptions {
     pub min_connections: u32,
     pub max_connections: u32,
-    pub acquire_timeout: u64,
+    pub connect_timeout: u64,
 }
 
 impl DatabaseConfiguration {

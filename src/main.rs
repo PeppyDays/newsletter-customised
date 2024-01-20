@@ -27,9 +27,14 @@ async fn main() {
         .min_connections(configuration.database.pool_options.min_connections)
         .max_connections(configuration.database.pool_options.max_connections)
         .connect_timeout(Duration::from_secs(
-            configuration.database.pool_options.acquire_timeout,
+            configuration.database.pool_options.connect_timeout,
         ))
-        .sqlx_logging(true);
+        .sqlx_logging(true)
+        .sqlx_logging_level(tracing_log::log::LevelFilter::Debug)
+        .sqlx_slow_statements_logging_settings(
+            tracing_log::log::LevelFilter::Warn,
+            Duration::from_secs(0),
+        );
 
     let database_connection_pool = Database::connect(database_connection_options)
         .await
