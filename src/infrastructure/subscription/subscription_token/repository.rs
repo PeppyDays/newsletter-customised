@@ -75,16 +75,12 @@ impl SubscriptionTokenRepository for SubscriptionTokenSeaOrmRepository {
         &self,
         token: &str,
     ) -> Result<Option<SubscriptionToken>, SubscriptionTokenError> {
-        let data_model = Entity::find()
+        Ok(Entity::find()
             .filter(Column::Token.eq(token))
             .one(&self.pool)
             .await
-            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?;
-
-        match data_model {
-            Some(data_model) => Ok(Some(SubscriptionToken::from(data_model))),
-            None => Ok(None),
-        }
+            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?
+            .map(SubscriptionToken::from))
     }
 }
 

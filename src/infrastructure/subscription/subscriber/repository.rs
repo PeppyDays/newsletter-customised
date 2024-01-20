@@ -93,30 +93,22 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
 
     #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
-        let data_model = Entity::find()
+        Ok(Entity::find()
             .filter(Column::Id.eq(id))
             .one(&self.pool)
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
-
-        match data_model {
-            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
-            None => Ok(None),
-        }
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .map(Subscriber::from))
     }
 
     #[tracing::instrument(name = "Searching subscriber details by email", skip(self))]
     async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError> {
-        let data_model = Entity::find()
+        Ok(Entity::find()
             .filter(Column::Email.eq(email))
             .one(&self.pool)
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
-
-        match data_model {
-            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
-            None => Ok(None),
-        }
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .map(Subscriber::from))
     }
 }
 
