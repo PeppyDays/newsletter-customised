@@ -1,5 +1,3 @@
 mod messenger;
+pub mod prelude;
 mod repository;
-
-pub use messenger::SubscriberEmailMessenger;
-pub use repository::SubscriberSeaOrmRepository;

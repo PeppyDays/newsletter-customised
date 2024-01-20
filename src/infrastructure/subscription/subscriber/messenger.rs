@@ -74,7 +74,7 @@ mod tests {
 
     use crate::domain::subscription::subscriber::messenger::SubscriberMessenger;
     use crate::domain::subscription::subscriber::model::Subscriber;
-    use crate::infrastructure::subscription::subscriber::SubscriberEmailMessenger;
+    use crate::infrastructure::subscription::subscriber::prelude::SubscriberEmailMessenger;
 
     struct SendEmailBodyMatcher;
 

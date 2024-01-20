@@ -1,3 +1,2 @@
+pub mod prelude;
 mod repository;
-
-pub use repository::SubscriptionTokenSeaOrmRepository;

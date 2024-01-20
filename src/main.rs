@@ -41,11 +41,11 @@ async fn main() {
         .expect("Failed to create repository connection pool");
 
     let subscriber_repository =
-        infrastructure::subscription::subscriber::SubscriberSeaOrmRepository::new(
+        infrastructure::subscription::subscriber::prelude::SubscriberSeaOrmRepository::new(
             database_connection_pool.clone(),
         );
     let subscription_token_repository =
-        infrastructure::subscription::subscription_token::SubscriptionTokenSeaOrmRepository::new(
+        infrastructure::subscription::subscription_token::prelude::SubscriptionTokenSeaOrmRepository::new(
             database_connection_pool.clone(),
         );
 
@@ -60,7 +60,7 @@ async fn main() {
     );
 
     let subscriber_messenger =
-        infrastructure::subscription::subscriber::SubscriberEmailMessenger::new(
+        infrastructure::subscription::subscriber::prelude::SubscriberEmailMessenger::new(
             reqwest::Client::builder()
                 .default_headers(headers)
                 .timeout(Duration::from_secs(

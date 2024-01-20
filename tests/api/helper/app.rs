@@ -10,10 +10,8 @@ use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
 use wiremock::MockServer;
 
-use newsletter::infrastructure::subscription::subscriber::{
-    SubscriberEmailMessenger, SubscriberSeaOrmRepository,
-};
-use newsletter::infrastructure::subscription::subscription_token::SubscriptionTokenSeaOrmRepository;
+use newsletter::infrastructure::subscription::subscriber::prelude::*;
+use newsletter::infrastructure::subscription::subscription_token::prelude::*;
 use newsletter::{api, configuration, telemetry};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
