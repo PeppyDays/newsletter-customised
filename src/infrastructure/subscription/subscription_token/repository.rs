@@ -1,102 +1,69 @@
-use chrono::{DateTime, Utc};
-use sqlx::postgres::PgRow;
-use sqlx::{Executor, Pool, Postgres, Row};
+use sea_orm::entity::prelude::*;
+use sea_orm::ActiveValue;
 use uuid::Uuid;
 
 use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
 use crate::domain::subscription::subscription_token::model::SubscriptionToken;
 use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
 
-struct SubscriptionTokenDataModel {
-    token: String,
-    subscriber_id: Uuid,
-    issued_at: DateTime<Utc>,
-    expired_at: DateTime<Utc>,
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[sea_orm(table_name = "subscription_tokens")]
+pub struct Model {
+    #[sea_orm(column_type = "Text", primary_key)]
+    pub token: String,
+    pub subscriber_id: Uuid,
+    pub issued_at: DateTimeWithTimeZone,
+    pub expired_at: DateTimeWithTimeZone,
 }
 
-impl SubscriptionTokenDataModel {
-    pub fn new(
-        token: String,
-        subscriber_id: Uuid,
-        issued_at: DateTime<Utc>,
-        expired_at: DateTime<Utc>,
-    ) -> Self {
-        Self {
-            token,
-            subscriber_id,
-            issued_at,
-            expired_at,
-        }
-    }
-}
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
 
-impl From<&SubscriptionToken> for SubscriptionTokenDataModel {
+impl ActiveModelBehavior for ActiveModel {}
+
+impl From<&SubscriptionToken> for ActiveModel {
     fn from(subscription_token: &SubscriptionToken) -> Self {
-        Self::new(
-            subscription_token.token.clone(),
-            subscription_token.subscriber_id,
-            subscription_token.issued_at,
-            subscription_token.expired_at,
-        )
-    }
-}
-
-impl From<&PgRow> for SubscriptionTokenDataModel {
-    fn from(row: &PgRow) -> Self {
-        Self {
-            token: row.get(0),
-            subscriber_id: row.get(1),
-            issued_at: row.get(2),
-            expired_at: row.get(3),
+        ActiveModel {
+            token: ActiveValue::Set(subscription_token.token.clone()),
+            subscriber_id: ActiveValue::Set(subscription_token.subscriber_id),
+            issued_at: ActiveValue::Set(subscription_token.issued_at.into()),
+            expired_at: ActiveValue::Set(subscription_token.expired_at.into()),
         }
     }
 }
 
-impl TryFrom<SubscriptionTokenDataModel> for SubscriptionToken {
-    type Error = SubscriptionTokenError;
-
-    fn try_from(value: SubscriptionTokenDataModel) -> Result<Self, Self::Error> {
-        Ok(Self {
-            token: value.token,
-            subscriber_id: value.subscriber_id,
-            issued_at: value.issued_at,
-            expired_at: value.expired_at,
-        })
+impl From<Model> for SubscriptionToken {
+    fn from(model: Model) -> Self {
+        Self {
+            token: model.token,
+            subscriber_id: model.subscriber_id,
+            issued_at: model.issued_at.into(),
+            expired_at: model.expired_at.into(),
+        }
     }
 }
 
 #[derive(Clone)]
-pub struct SubscriptionTokenPostgresRepository {
-    pool: Pool<Postgres>,
+pub struct SubscriptionTokenSeaOrmRepository {
+    pool: DatabaseConnection,
 }
 
-impl SubscriptionTokenPostgresRepository {
-    pub fn new(pool: Pool<Postgres>) -> Self {
+impl SubscriptionTokenSeaOrmRepository {
+    pub fn new(pool: DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait::async_trait]
-impl SubscriptionTokenRepository for SubscriptionTokenPostgresRepository {
+impl SubscriptionTokenRepository for SubscriptionTokenSeaOrmRepository {
     #[tracing::instrument(name = "Saving subscriber token details", skip(self))]
     async fn save(
         &self,
         subscription_token: &SubscriptionToken,
     ) -> Result<(), SubscriptionTokenError> {
-        let data_model = SubscriptionTokenDataModel::from(subscription_token);
-        let query = sqlx::query!(
-            "INSERT INTO subscription_tokens (token, subscriber_id, issued_at, expired_at) VALUES ($1, $2, $3, $4)",
-            data_model.token,
-            data_model.subscriber_id,
-            data_model.issued_at,
-            data_model.expired_at,
-        );
-
-        self.pool
-            .acquire()
-            .await
-            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?
-            .execute(query)
+        let data_model = ActiveModel::from(subscription_token);
+        data_model
+            .insert(&self.pool)
             .await
             .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?;
 
@@ -108,23 +75,14 @@ impl SubscriptionTokenRepository for SubscriptionTokenPostgresRepository {
         &self,
         token: &str,
     ) -> Result<Option<SubscriptionToken>, SubscriptionTokenError> {
-        let query = sqlx::query!(
-            "SELECT token, subscriber_id, issued_at, expired_at FROM subscription_tokens WHERE token = $1",
-            token
-        );
-
-        let optional_data_model = self
-            .pool
-            .acquire()
+        let data_model = Entity::find()
+            .filter(Column::Token.eq(token))
+            .one(&self.pool)
             .await
-            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?
-            .fetch_optional(query)
-            .await
-            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?
-            .map(|row| SubscriptionTokenDataModel::from(&row));
+            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?;
 
-        match optional_data_model {
-            Some(data_model) => Ok(Some(SubscriptionToken::try_from(data_model)?)),
+        match data_model {
+            Some(data_model) => Ok(Some(SubscriptionToken::from(data_model))),
             None => Ok(None),
         }
     }
@@ -134,19 +92,21 @@ impl SubscriptionTokenRepository for SubscriptionTokenPostgresRepository {
 mod tests {
     use std::error::Error;
 
+    use sea_orm::Database;
     use uuid::Uuid;
 
     use crate::configuration::get_configuration;
     use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
     use crate::domain::subscription::subscription_token::model::SubscriptionToken;
     use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
-    use crate::infrastructure::subscription::subscription_token::SubscriptionTokenPostgresRepository;
 
-    async fn get_repository() -> SubscriptionTokenPostgresRepository {
+    use super::*;
+
+    async fn get_repository() -> SubscriptionTokenSeaOrmRepository {
         let configuration = get_configuration().await;
 
-        SubscriptionTokenPostgresRepository::new(
-            sqlx::Pool::connect(&configuration.database.connection_string_with_database())
+        SubscriptionTokenSeaOrmRepository::new(
+            Database::connect(&configuration.database.connection_string_without_database())
                 .await
                 .unwrap(),
         )

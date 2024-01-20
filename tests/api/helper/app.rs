@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use fake::Fake;
 use once_cell::sync::Lazy;
+use sea_orm::Database;
 use serde::Serialize;
 use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
@@ -12,7 +13,7 @@ use wiremock::MockServer;
 use newsletter::infrastructure::subscription::subscriber::{
     SubscriberEmailMessenger, SubscriberPostgresRepository,
 };
-use newsletter::infrastructure::subscription::subscription_token::SubscriptionTokenPostgresRepository;
+use newsletter::infrastructure::subscription::subscription_token::SubscriptionTokenSeaOrmRepository;
 use newsletter::{api, configuration, telemetry};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -42,7 +43,7 @@ pub struct App {
     // subscriber repository for checking data in the database
     pub subscriber_repository: Arc<SubscriberPostgresRepository>,
     // subscription token repository for checking data in the database
-    pub subscription_token_repository: Arc<SubscriptionTokenPostgresRepository>,
+    pub subscription_token_repository: Arc<SubscriptionTokenSeaOrmRepository>,
 }
 
 // create a test application
@@ -92,12 +93,16 @@ impl App {
         .await
         .unwrap();
 
+        let p = Database::connect(configuration.database.connection_string_with_database())
+            .await
+            .unwrap();
+
         // migrate schema changes
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
         // create repository
         let subscriber_repository = SubscriberPostgresRepository::new(pool.clone());
-        let subscription_token_repository = SubscriptionTokenPostgresRepository::new(pool.clone());
+        let subscription_token_repository = SubscriptionTokenSeaOrmRepository::new(p.clone());
 
         // create email messenger
         let subscriber_messenger = SubscriberEmailMessenger::new(

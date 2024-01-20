@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use newsletter::{api, configuration, infrastructure, telemetry};
+use sea_orm::{ConnectOptions, Database};
 use secrecy::ExposeSecret;
 
 #[tokio::main]
@@ -30,13 +31,26 @@ async fn main() {
         .await
         .expect("Failed to create repository connection pool");
 
+    let mut option = ConnectOptions::new(configuration.database.connection_string_with_database());
+    option
+        .min_connections(configuration.database.pool_options.min_connections)
+        .max_connections(configuration.database.pool_options.max_connections)
+        .connect_timeout(Duration::from_secs(
+            configuration.database.pool_options.acquire_timeout,
+        ))
+        .sqlx_logging(true);
+
+    let pool = Database::connect(option)
+        .await
+        .expect("Failed to create repository connection pool");
+
     let subscriber_repository =
         infrastructure::subscription::subscriber::SubscriberPostgresRepository::new(
             database_connection_pool.clone(),
         );
     let subscription_token_repository =
-        infrastructure::subscription::subscription_token::SubscriptionTokenPostgresRepository::new(
-            database_connection_pool.clone(),
+        infrastructure::subscription::subscription_token::SubscriptionTokenSeaOrmRepository::new(
+            pool.clone(),
         );
 
     // configure email service client for messenger

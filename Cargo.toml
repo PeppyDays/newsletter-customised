@@ -11,6 +11,7 @@ path = "src/main.rs"
 name = "app"
 
 [dependencies]
+
 anyhow = "1"
 async-trait = "0.1"
 axum = "0.7"
@@ -19,6 +20,11 @@ confique = { version = "0.2", default-features = false, features = ["yaml"] }
 reqwest = { version = "0.11", default-features = false, features = [
   "json",
   "rustls-tls",
+] }
+sea-orm = { version = "0.12", features = [
+  "sqlx-postgres",
+  "runtime-tokio-rustls",
+  "macros",
 ] }
 secrecy = { version = "0.8", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }

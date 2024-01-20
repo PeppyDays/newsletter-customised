@@ -1,3 +1,3 @@
 mod repository;
 
-pub use repository::SubscriptionTokenPostgresRepository;
+pub use repository::SubscriptionTokenSeaOrmRepository;
