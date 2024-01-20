@@ -1,17 +1,11 @@
 use axum::extract::MatchedPath;
 use axum::http::Request;
-use axum::routing::{
-    get,
-    post,
-};
+use axum::routing::{get, post};
 use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::api::handlers::{
-    health,
-    subscription,
-};
+use crate::api::handlers::{health, subscription};
 use crate::api::runner::Container;
 
 pub async fn get_router(container: Container) -> Router {
@@ -21,8 +15,9 @@ pub async fn get_router(container: Container) -> Router {
             "/subscription/subscribe",
             post(subscription::subscribe::handle),
         )
+        .route("/health/readiness", get(health::readiness::handle))
         .with_state(container)
-        .route("/", get(health::check::handle))
+        .route("/health/liveness", get(health::liveness::handle))
         .layer(
             // Refer to https://github.com/tokio-rs/axum/blob/main/examples/tracing-aka-logging/Cargo.toml
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

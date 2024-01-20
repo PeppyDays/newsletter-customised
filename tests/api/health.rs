@@ -3,10 +3,23 @@ use reqwest::StatusCode;
 use crate::api::helper;
 
 #[tokio::test]
-async fn health_check_returns_200() {
+async fn health_check_for_liveness_returns_200() {
     // given
     let app = helper::app::App::new().await;
-    let url = format!("http://{}/", app.address);
+    let url = format!("http://{}/health/liveness", app.address);
+
+    // when
+    let response = app.client.get(url).send().await.unwrap();
+
+    // then
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn health_check_for_readiness_returns_200_if_all_states_work_well() {
+    // given
+    let app = helper::app::App::new().await;
+    let url = format!("http://{}/health/readiness", app.address);
 
     // when
     let response = app.client.get(url).send().await.unwrap();
