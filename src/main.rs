@@ -21,18 +21,9 @@ async fn main() {
     let listener = configuration::bind_listener(&configuration).await;
 
     // configure database connection pool
-    let database_connection_pool = sqlx::postgres::PgPoolOptions::new()
-        .min_connections(configuration.database.pool_options.min_connections)
-        .max_connections(configuration.database.pool_options.max_connections)
-        .acquire_timeout(Duration::from_secs(
-            configuration.database.pool_options.acquire_timeout,
-        ))
-        .connect(&configuration.database.connection_string_without_database())
-        .await
-        .expect("Failed to create repository connection pool");
-
-    let mut option = ConnectOptions::new(configuration.database.connection_string_with_database());
-    option
+    let mut database_connection_options =
+        ConnectOptions::new(configuration.database.connection_string_with_database());
+    database_connection_options
         .min_connections(configuration.database.pool_options.min_connections)
         .max_connections(configuration.database.pool_options.max_connections)
         .connect_timeout(Duration::from_secs(
@@ -40,17 +31,17 @@ async fn main() {
         ))
         .sqlx_logging(true);
 
-    let pool = Database::connect(option)
+    let database_connection_pool = Database::connect(database_connection_options)
         .await
         .expect("Failed to create repository connection pool");
 
     let subscriber_repository =
-        infrastructure::subscription::subscriber::SubscriberPostgresRepository::new(
+        infrastructure::subscription::subscriber::SubscriberSeaOrmRepository::new(
             database_connection_pool.clone(),
         );
     let subscription_token_repository =
         infrastructure::subscription::subscription_token::SubscriptionTokenSeaOrmRepository::new(
-            pool.clone(),
+            database_connection_pool.clone(),
         );
 
     // configure email service client for messenger

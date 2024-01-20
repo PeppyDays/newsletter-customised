@@ -11,7 +11,7 @@ use tokio::net::TcpListener;
 use wiremock::MockServer;
 
 use newsletter::infrastructure::subscription::subscriber::{
-    SubscriberEmailMessenger, SubscriberPostgresRepository,
+    SubscriberEmailMessenger, SubscriberSeaOrmRepository,
 };
 use newsletter::infrastructure::subscription::subscription_token::SubscriptionTokenSeaOrmRepository;
 use newsletter::{api, configuration, telemetry};
@@ -41,7 +41,7 @@ pub struct App {
     // mock server for checking email calls from application
     pub email_server: Arc<MockServer>,
     // subscriber repository for checking data in the database
-    pub subscriber_repository: Arc<SubscriberPostgresRepository>,
+    pub subscriber_repository: Arc<SubscriberSeaOrmRepository>,
     // subscription token repository for checking data in the database
     pub subscription_token_repository: Arc<SubscriptionTokenSeaOrmRepository>,
 }
@@ -86,23 +86,22 @@ impl App {
             .await
             .unwrap();
 
-        // create a connection pool for migration and repositories
+        // migrate schema changes
         let pool = sqlx::Pool::<sqlx::Postgres>::connect(
             &configuration.database.connection_string_with_database(),
         )
         .await
         .unwrap();
 
-        let p = Database::connect(configuration.database.connection_string_with_database())
-            .await
-            .unwrap();
-
-        // migrate schema changes
         sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
         // create repository
-        let subscriber_repository = SubscriberPostgresRepository::new(pool.clone());
-        let subscription_token_repository = SubscriptionTokenSeaOrmRepository::new(p.clone());
+        let pool = Database::connect(configuration.database.connection_string_with_database())
+            .await
+            .unwrap();
+
+        let subscriber_repository = SubscriberSeaOrmRepository::new(pool.clone());
+        let subscription_token_repository = SubscriptionTokenSeaOrmRepository::new(pool.clone());
 
         // create email messenger
         let subscriber_messenger = SubscriberEmailMessenger::new(

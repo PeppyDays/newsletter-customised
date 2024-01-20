@@ -1,6 +1,5 @@
-use chrono::{DateTime, Utc};
-use sqlx::postgres::PgRow;
-use sqlx::{Executor, Pool, Postgres, Row};
+use sea_orm::entity::prelude::*;
+use sea_orm::ActiveValue;
 use uuid::Uuid;
 
 use crate::domain::subscription::subscriber::error::SubscriberError;
@@ -9,107 +8,72 @@ use crate::domain::subscription::subscriber::model::{
 };
 use crate::domain::subscription::subscriber::repository::SubscriberRepository;
 
-struct SubscriberDataModel {
-    id: Uuid,
-    email: String,
-    name: String,
-    status: String,
-    subscribed_at: DateTime<Utc>,
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[sea_orm(table_name = "subscribers")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: Uuid,
+    #[sea_orm(column_type = "Text", unique)]
+    pub email: String,
+    #[sea_orm(column_type = "Text")]
+    pub name: String,
+    #[sea_orm(column_type = "Text")]
+    pub status: String,
 }
 
-impl SubscriberDataModel {
-    pub fn new(id: Uuid, email: String, name: String, status: String) -> Self {
-        Self {
-            id,
-            email,
-            name,
-            status,
-            subscribed_at: Utc::now(),
-        }
-    }
-}
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
 
-// TODO: Implement the mapping with ORM later
-impl From<&Subscriber> for SubscriberDataModel {
+impl ActiveModelBehavior for ActiveModel {}
+
+impl From<&Subscriber> for ActiveModel {
     fn from(subscriber: &Subscriber) -> Self {
-        Self::new(
-            subscriber.id,
-            subscriber.email.as_ref().to_string(),
-            subscriber.name.as_ref().to_string(),
-            // TODO: Implement elegant enum in domain to string in data model mapping
-            match subscriber.status {
+        Self {
+            id: ActiveValue::Set(subscriber.id),
+            email: ActiveValue::Set(subscriber.email.as_ref().to_string()),
+            name: ActiveValue::Set(subscriber.name.as_ref().to_string()),
+            status: ActiveValue::Set(match subscriber.status {
                 SubscriberStatus::Confirmed => "Confirmed".to_string(),
                 SubscriberStatus::Unconfirmed => "Unconfirmed".to_string(),
-            },
-        )
-    }
-}
-
-impl From<&PgRow> for SubscriberDataModel {
-    fn from(row: &PgRow) -> Self {
-        Self {
-            id: row.get(0),
-            email: row.get(1),
-            name: row.get(2),
-            status: row.get(3),
-            subscribed_at: row.get(4),
+                SubscriberStatus::Unknown => "Unknown".to_string(),
+            }),
         }
     }
 }
 
-impl TryFrom<SubscriberDataModel> for Subscriber {
-    type Error = SubscriberError;
-
-    fn try_from(data_model: SubscriberDataModel) -> Result<Self, Self::Error> {
-        let email = SubscriberEmail::parse(data_model.email)?;
-        let name = SubscriberName::parse(data_model.name)?;
-        let status = match data_model.status.as_ref() {
-            "Confirmed" => Ok(SubscriberStatus::Confirmed),
-            "Unconfirmed" => Ok(SubscriberStatus::Unconfirmed),
-            _ => Err(SubscriberError::RepositoryOperationFailed(anyhow::anyhow!(
-                "Failed to parse as SubscriberStatus",
-            ))),
-        }?;
-
-        Ok(Self {
+impl From<Model> for Subscriber {
+    fn from(data_model: Model) -> Self {
+        Self {
             id: data_model.id,
-            email,
-            name,
-            status,
-        })
+            email: SubscriberEmail::parse(data_model.email).unwrap(),
+            name: SubscriberName::parse(data_model.name).unwrap(),
+            status: match data_model.status.as_ref() {
+                "Confirmed" => SubscriberStatus::Confirmed,
+                "Unconfirmed" => SubscriberStatus::Unconfirmed,
+                _ => SubscriberStatus::Unknown,
+            },
+        }
     }
 }
 
 #[derive(Clone)]
-pub struct SubscriberPostgresRepository {
-    pool: Pool<Postgres>,
+pub struct SubscriberSeaOrmRepository {
+    pool: DatabaseConnection,
 }
 
-impl SubscriberPostgresRepository {
-    pub fn new(pool: Pool<Postgres>) -> Self {
+impl SubscriberSeaOrmRepository {
+    pub fn new(pool: DatabaseConnection) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait::async_trait]
-impl SubscriberRepository for SubscriberPostgresRepository {
+impl SubscriberRepository for SubscriberSeaOrmRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip(self))]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
-        let data_model = SubscriberDataModel::from(subscriber);
-        let query = sqlx::query!(
-            "INSERT INTO subscribers (id, email, name, subscribed_at, status) VALUES ($1, $2, $3, $4, $5)",
-            data_model.id,
-            data_model.email,
-            data_model.name,
-            data_model.subscribed_at,
-            data_model.status,
-        );
-
-        self.pool
-            .acquire()
-            .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .execute(query)
+        let data_model = ActiveModel::from(subscriber);
+        data_model
+            .insert(&self.pool)
             .await
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
@@ -118,20 +82,9 @@ impl SubscriberRepository for SubscriberPostgresRepository {
 
     #[tracing::instrument(name = "Updating subscriber details", skip(self))]
     async fn update(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
-        let data_model = SubscriberDataModel::from(subscriber);
-        let query = sqlx::query!(
-            "UPDATE subscribers SET email = $2, name = $3, status = $4 WHERE id = $1",
-            data_model.id,
-            data_model.email,
-            data_model.name,
-            data_model.status,
-        );
-
-        self.pool
-            .acquire()
-            .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .execute(query)
+        let data_model = ActiveModel::from(subscriber);
+        data_model
+            .update(&self.pool)
             .await
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
@@ -140,46 +93,28 @@ impl SubscriberRepository for SubscriberPostgresRepository {
 
     #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
-        let query = sqlx::query!(
-            "SELECT id, email, name, status, subscribed_at FROM subscribers WHERE id = $1",
-            id
-        );
-
-        let optional_data_model = self
-            .pool
-            .acquire()
+        let data_model = Entity::find()
+            .filter(Column::Id.eq(id))
+            .one(&self.pool)
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .fetch_optional(query)
-            .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .map(|row| SubscriberDataModel::from(&row));
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
-        match optional_data_model {
-            Some(data_model) => Ok(Some(Subscriber::try_from(data_model)?)),
+        match data_model {
+            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
             None => Ok(None),
         }
     }
 
     #[tracing::instrument(name = "Searching subscriber details by email", skip(self))]
     async fn find_by_email(&self, email: &str) -> Result<Option<Subscriber>, SubscriberError> {
-        let query = sqlx::query!(
-            "SELECT id, email, name, status, subscribed_at FROM subscribers WHERE email = $1",
-            email
-        );
-
-        let optional_data_model = self
-            .pool
-            .acquire()
+        let data_model = Entity::find()
+            .filter(Column::Email.eq(email))
+            .one(&self.pool)
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .fetch_optional(query)
-            .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .map(|row| SubscriberDataModel::from(&row));
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
-        match optional_data_model {
-            Some(data_model) => Ok(Some(Subscriber::try_from(data_model)?)),
+        match data_model {
+            Some(data_model) => Ok(Some(Subscriber::from(data_model))),
             None => Ok(None),
         }
     }
@@ -190,18 +125,20 @@ mod tests {
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
     use fake::Fake;
+    use sea_orm::Database;
     use uuid::Uuid;
 
     use crate::configuration::*;
     use crate::domain::subscription::subscriber::model::Subscriber;
     use crate::domain::subscription::subscriber::repository::SubscriberRepository;
-    use crate::infrastructure::subscription::subscriber::*;
 
-    async fn get_repository() -> SubscriberPostgresRepository {
+    use super::*;
+
+    async fn get_repository() -> SubscriberSeaOrmRepository {
         let configuration = get_configuration().await;
 
-        SubscriberPostgresRepository::new(
-            sqlx::Pool::connect(&configuration.database.connection_string_with_database())
+        SubscriberSeaOrmRepository::new(
+            Database::connect(&configuration.database.connection_string_without_database())
                 .await
                 .unwrap(),
         )
