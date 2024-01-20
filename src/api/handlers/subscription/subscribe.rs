@@ -52,6 +52,10 @@ pub async fn handle(
     Ok(StatusCode::CREATED)
 }
 
+#[tracing::instrument(
+    name = "Adding a new subscriber - register subscriber",
+    skip(id, request, subscriber_repository)
+)]
 async fn register_subscriber(
     id: Uuid,
     request: Request,
@@ -62,6 +66,10 @@ async fn register_subscriber(
     Ok(subscriber)
 }
 
+#[tracing::instrument(
+    name = "Adding a new subscriber - issue subscription token",
+    skip(subscriber, subscription_token_repository)
+)]
 async fn issue_subscription_token(
     subscriber: &Subscriber,
     subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
@@ -73,6 +81,10 @@ async fn issue_subscription_token(
     Ok(subscription_token)
 }
 
+#[tracing::instrument(
+    name = "Adding a new subscriber - send confirmation email",
+    skip(subscriber, subscription_token, exposing_url, subscriber_messenger)
+)]
 async fn send_confirmation_email(
     subscriber: &Subscriber,
     subscription_token: &SubscriptionToken,
