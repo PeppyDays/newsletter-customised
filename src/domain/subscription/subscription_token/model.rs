@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct SubscriptionToken {
-    // TODO: Make fields private
     pub token: String,
     pub subscriber_id: Uuid,
     pub issued_at: DateTime<Utc>,
