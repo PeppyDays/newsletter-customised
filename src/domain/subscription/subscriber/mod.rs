@@ -1,4 +1,5 @@
-pub mod error;
-pub mod messenger;
-pub mod model;
-pub mod repository;
+mod error;
+mod messenger;
+mod model;
+pub mod prelude;
+mod repository;

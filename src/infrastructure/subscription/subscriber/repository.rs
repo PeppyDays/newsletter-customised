@@ -3,11 +3,7 @@ use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
 
-use crate::domain::subscription::subscriber::error::SubscriberError;
-use crate::domain::subscription::subscriber::model::{
-    Subscriber, SubscriberEmail, SubscriberName, SubscriberStatus,
-};
-use crate::domain::subscription::subscriber::repository::SubscriberRepository;
+use crate::domain::subscription::subscriber::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscribers")]
@@ -117,8 +113,6 @@ mod tests {
     use uuid::Uuid;
 
     use crate::configuration::*;
-    use crate::domain::subscription::subscriber::model::Subscriber;
-    use crate::domain::subscription::subscriber::repository::SubscriberRepository;
 
     use super::*;
 

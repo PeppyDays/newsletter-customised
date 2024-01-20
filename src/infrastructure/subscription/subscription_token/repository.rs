@@ -2,9 +2,7 @@ use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
 
-use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
-use crate::domain::subscription::subscription_token::model::SubscriptionToken;
-use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
+use crate::domain::subscription::subscription_token::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscription_tokens")]
@@ -92,9 +90,6 @@ mod tests {
     use uuid::Uuid;
 
     use crate::configuration::get_configuration;
-    use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
-    use crate::domain::subscription::subscription_token::model::SubscriptionToken;
-    use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
 
     use super::*;
 

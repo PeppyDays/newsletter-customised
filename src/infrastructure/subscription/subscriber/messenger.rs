@@ -1,6 +1,4 @@
-use crate::domain::subscription::subscriber::error::SubscriberError;
-use crate::domain::subscription::subscriber::messenger::SubscriberMessenger;
-use crate::domain::subscription::subscriber::model::Subscriber;
+use crate::domain::subscription::subscriber::prelude::*;
 
 #[derive(Clone)]
 pub struct SubscriberEmailMessenger {
@@ -72,8 +70,8 @@ mod tests {
     use wiremock::matchers::{any, header, header_exists, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    use crate::domain::subscription::subscriber::messenger::SubscriberMessenger;
-    use crate::domain::subscription::subscriber::model::Subscriber;
+    use crate::domain::subscription::subscriber::prelude::Subscriber;
+    use crate::domain::subscription::subscriber::prelude::SubscriberMessenger;
     use crate::infrastructure::subscription::subscriber::prelude::SubscriberEmailMessenger;
 
     struct SendEmailBodyMatcher;

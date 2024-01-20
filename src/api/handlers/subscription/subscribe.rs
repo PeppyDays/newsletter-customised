@@ -5,9 +5,8 @@ use uuid::Uuid;
 
 use crate::api::error::ApiError;
 use crate::api::runner::Container;
-use crate::domain::subscription::subscriber::error::SubscriberError;
-use crate::domain::subscription::subscriber::model::Subscriber;
-use crate::domain::subscription::subscription_token::model::SubscriptionToken;
+use crate::domain::subscription::subscriber::prelude::{Subscriber, SubscriberError};
+use crate::domain::subscription::subscription_token::prelude::SubscriptionToken;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Request {

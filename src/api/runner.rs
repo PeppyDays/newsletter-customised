@@ -4,9 +4,9 @@ use tokio::net::TcpListener;
 
 use crate::api::router;
 use crate::configuration::ApplicationExposingAddress;
-use crate::domain::subscription::subscriber::messenger::SubscriberMessenger;
-use crate::domain::subscription::subscriber::repository::SubscriberRepository;
-use crate::domain::subscription::subscription_token::repository::SubscriptionTokenRepository;
+use crate::domain::subscription::subscriber::prelude::SubscriberMessenger;
+use crate::domain::subscription::subscriber::prelude::SubscriberRepository;
+use crate::domain::subscription::subscription_token::prelude::SubscriptionTokenRepository;
 
 #[derive(Clone)]
 pub struct Container {
