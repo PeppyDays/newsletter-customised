@@ -33,7 +33,7 @@ async fn main() {
         .sqlx_logging_level(tracing_log::log::LevelFilter::Debug)
         .sqlx_slow_statements_logging_settings(
             tracing_log::log::LevelFilter::Warn,
-            Duration::from_secs(0),
+            Duration::from_secs(1),
         );
 
     let database_connection_pool = Database::connect(database_connection_options)
