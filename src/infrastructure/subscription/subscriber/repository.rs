@@ -1,4 +1,5 @@
 use sea_orm::entity::prelude::*;
+use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
 
@@ -72,19 +73,14 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip(self))]
     async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
         let data_model = ActiveModel::from(subscriber);
-        data_model
-            .insert(&self.pool)
-            .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
-        Ok(())
-    }
-
-    #[tracing::instrument(name = "Updating subscriber details", skip(self))]
-    async fn update(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
-        let data_model = ActiveModel::from(subscriber);
-        data_model
-            .update(&self.pool)
+        Entity::insert(data_model)
+            .on_conflict(
+                OnConflict::column(Column::Id)
+                    .update_columns([Column::Email, Column::Name, Column::Status])
+                    .to_owned(),
+            )
+            .exec(&self.pool)
             .await
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
 
@@ -173,5 +169,23 @@ mod tests {
         // then
         let not_existing_subscriber = repository.find_by_id(subscriber.id).await.unwrap();
         assert!(not_existing_subscriber.is_none());
+    }
+
+    #[tokio::test]
+    async fn saving_entity_two_times_will_update_original_entity() {
+        // given
+        let repository = get_repository().await;
+        let mut subscriber = generate_subscriber();
+        assert_eq!(subscriber.status, SubscriberStatus::Unconfirmed);
+
+        repository.save(&subscriber).await.unwrap();
+
+        // when
+        subscriber.status = SubscriberStatus::Confirmed;
+        repository.save(&subscriber).await.unwrap();
+
+        // then
+        let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
+        assert_eq!(persisted_subscriber.status, SubscriberStatus::Confirmed);
     }
 }

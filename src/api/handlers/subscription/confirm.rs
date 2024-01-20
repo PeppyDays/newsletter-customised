@@ -1,7 +1,4 @@
-use axum::extract::{
-    Query,
-    State,
-};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 
 use crate::api::error::ApiError;
@@ -45,7 +42,7 @@ pub async fn handle(
 
     container
         .subscriber_repository
-        .update(&subscriber)
+        .save(&subscriber)
         .await
         .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
 
