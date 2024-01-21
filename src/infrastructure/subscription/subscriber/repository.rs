@@ -102,6 +102,26 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
             .map(Subscriber::from))
     }
+
+    // TODO: Modify this to streaming rows
+    #[tracing::instrument(name = "Searching subscriber details by status", skip(self))]
+    async fn find_by_status(
+        &self,
+        status: SubscriberStatus,
+    ) -> Result<Vec<Subscriber>, SubscriberError> {
+        Ok(Entity::find()
+            .filter(Column::Status.eq(match status {
+                SubscriberStatus::Confirmed => "Confirmed",
+                SubscriberStatus::Unconfirmed => "Unconfirmed",
+                SubscriberStatus::Unknown => "Unknown",
+            }))
+            .all(&self.pool)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .into_iter()
+            .map(Subscriber::from)
+            .collect())
+    }
 }
 
 #[cfg(test)]
@@ -109,21 +129,76 @@ mod tests {
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
     use fake::Fake;
-    use sea_orm::Database;
     use uuid::Uuid;
 
     use crate::configuration::*;
 
     use super::*;
 
-    async fn get_repository() -> SubscriberSeaOrmRepository {
-        let configuration = get_configuration().await;
+    async fn get_repository(isolated: bool) -> SubscriberSeaOrmRepository {
+        let mut configuration = get_configuration().await;
 
-        SubscriberSeaOrmRepository::new(
-            Database::connect(&configuration.database.connection_string_without_database())
-                .await
-                .unwrap(),
+        if !isolated {
+            let pool = sea_orm::Database::connect(
+                &configuration.database.connection_string_with_database(),
+            )
+            .await
+            .unwrap();
+
+            return SubscriberSeaOrmRepository::new(pool);
+        }
+
+        let database = format!("{}_{}", "test", 10.fake::<String>());
+        configuration.database.source.database = database.clone();
+
+        let connection = sea_orm::Database::connect(
+            &configuration.database.connection_string_without_database(),
         )
+        .await
+        .unwrap();
+
+        // https://www.sea-ql.org/sea-orm-tutorial/ch02-02-connect-to-database.html
+        match connection.get_database_backend() {
+            sea_orm::DatabaseBackend::MySql => {
+                connection
+                    .execute(sea_orm::Statement::from_string(
+                        sea_orm::DatabaseBackend::MySql,
+                        format!("CREATE SCHEMA IF NOT EXISTS `{}`;", &database),
+                    ))
+                    .await
+                    .unwrap();
+            }
+            sea_orm::DatabaseBackend::Postgres => {
+                connection
+                    .execute(sea_orm::Statement::from_string(
+                        sea_orm::DatabaseBackend::Postgres,
+                        format!("DROP DATABASE IF EXISTS \"{}\";", &database),
+                    ))
+                    .await
+                    .unwrap();
+
+                connection
+                    .execute(sea_orm::Statement::from_string(
+                        sea_orm::DatabaseBackend::Postgres,
+                        format!("CREATE DATABASE \"{}\";", &database),
+                    ))
+                    .await
+                    .unwrap();
+            }
+            sea_orm::DatabaseBackend::Sqlite => (),
+        };
+
+        let pool =
+            sea_orm::Database::connect(&configuration.database.connection_string_with_database())
+                .await
+                .unwrap();
+
+        sqlx::migrate!("./migrations")
+            .run(pool.get_postgres_connection_pool())
+            .await
+            .unwrap();
+
+        SubscriberSeaOrmRepository::new(pool)
     }
 
     fn generate_subscriber() -> Subscriber {
@@ -137,7 +212,7 @@ mod tests {
     #[tokio::test]
     async fn fetching_by_id_after_saving_via_repository_makes_the_same_subscriber() {
         // given
-        let repository = get_repository().await;
+        let repository = get_repository(false).await;
         let subscriber = generate_subscriber();
 
         // when
@@ -154,7 +229,7 @@ mod tests {
     #[tokio::test]
     async fn fetching_not_existing_subscriber_should_return_option_null() {
         // given
-        let repository = get_repository().await;
+        let repository = get_repository(false).await;
         let subscriber = generate_subscriber();
 
         // when
@@ -168,7 +243,7 @@ mod tests {
     #[tokio::test]
     async fn saving_entity_two_times_will_update_original_entity() {
         // given
-        let repository = get_repository().await;
+        let repository = get_repository(false).await;
         let mut subscriber = generate_subscriber();
         assert_eq!(subscriber.status, SubscriberStatus::Unconfirmed);
 
@@ -181,5 +256,31 @@ mod tests {
         // then
         let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
         assert_eq!(persisted_subscriber.status, SubscriberStatus::Confirmed);
+    }
+
+    #[tokio::test]
+    async fn searching_by_status_with_confirmed_returns_only_confirmed_subscribers() {
+        // given
+        let repository = get_repository(true).await;
+        let unconfirmed_subscriber_1 = generate_subscriber();
+        let unconfirmed_subscriber_2 = generate_subscriber();
+        let mut confirmed_subscriber = generate_subscriber();
+        confirmed_subscriber.status = SubscriberStatus::Confirmed;
+
+        repository.save(&unconfirmed_subscriber_1).await.unwrap();
+        repository.save(&unconfirmed_subscriber_2).await.unwrap();
+        repository.save(&confirmed_subscriber).await.unwrap();
+
+        // when
+        let response = repository
+            .find_by_status(SubscriberStatus::Confirmed)
+            .await
+            .unwrap();
+
+        // then
+        assert_eq!(response.len(), 1);
+
+        let persisted_subscriber = response.first().unwrap();
+        assert_eq!(persisted_subscriber.id, confirmed_subscriber.id);
     }
 }

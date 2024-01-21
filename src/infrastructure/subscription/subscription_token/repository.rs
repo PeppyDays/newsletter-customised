@@ -105,7 +105,7 @@ mod tests {
     use sea_orm::Database;
     use uuid::Uuid;
 
-    use crate::{configuration::get_configuration, domain::subscription::subscription_token};
+    use crate::configuration::get_configuration;
 
     use super::*;
 
