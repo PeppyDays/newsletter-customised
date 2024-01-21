@@ -4,9 +4,8 @@ use std::time::Duration;
 
 use fake::Fake;
 use once_cell::sync::Lazy;
-use sea_orm::Database;
+use sea_orm::ConnectionTrait;
 use serde::Serialize;
-use sqlx::{Connection, Executor, PgConnection};
 use tokio::net::TcpListener;
 use wiremock::MockServer;
 
@@ -64,40 +63,57 @@ impl App {
         configuration.messenger.email.url = email_server.uri();
 
         // randomise database for data isolation
-        let database_postfix = 10.fake::<String>();
-        configuration.database.source.database = format!("{}_{}", "test", database_postfix);
+        let database = format!("{}_{}", "test", 10.fake::<String>());
+        configuration.database.source.database = database.clone();
 
-        // configure database
-        let mut connection =
-            PgConnection::connect(&configuration.database.connection_string_without_database())
-                .await
-                .unwrap();
-
-        connection
-            .execute(
-                format!(
-                    r#"CREATE DATABASE "{}";"#,
-                    configuration.database.source.database
-                )
-                .as_str(),
-            )
-            .await
-            .unwrap();
-
-        // migrate schema changes
-        let pool = sqlx::Pool::<sqlx::Postgres>::connect(
-            &configuration.database.connection_string_with_database(),
+        let connection = sea_orm::Database::connect(
+            &configuration.database.connection_string_without_database(),
         )
         .await
         .unwrap();
 
-        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+        match connection.get_database_backend() {
+            sea_orm::DatabaseBackend::MySql => {
+                connection
+                    .execute(sea_orm::Statement::from_string(
+                        sea_orm::DatabaseBackend::MySql,
+                        format!("CREATE SCHEMA IF NOT EXISTS `{}`;", &database),
+                    ))
+                    .await
+                    .unwrap();
+            }
+            sea_orm::DatabaseBackend::Postgres => {
+                connection
+                    .execute(sea_orm::Statement::from_string(
+                        sea_orm::DatabaseBackend::Postgres,
+                        format!("DROP DATABASE IF EXISTS \"{}\";", &database),
+                    ))
+                    .await
+                    .unwrap();
 
-        // create repository
-        let pool = Database::connect(configuration.database.connection_string_with_database())
+                connection
+                    .execute(sea_orm::Statement::from_string(
+                        sea_orm::DatabaseBackend::Postgres,
+                        format!("CREATE DATABASE \"{}\";", &database),
+                    ))
+                    .await
+                    .unwrap();
+            }
+            sea_orm::DatabaseBackend::Sqlite => (),
+        };
+
+        // migrate schema changes
+        let pool =
+            sea_orm::Database::connect(&configuration.database.connection_string_with_database())
+                .await
+                .unwrap();
+
+        sqlx::migrate!("./migrations")
+            .run(pool.get_postgres_connection_pool())
             .await
             .unwrap();
 
+        // create repository
         let subscriber_repository = SubscriberSeaOrmRepository::new(pool.clone());
         let subscription_token_repository = SubscriptionTokenSeaOrmRepository::new(pool.clone());
 
