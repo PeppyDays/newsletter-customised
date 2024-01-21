@@ -5,12 +5,10 @@ use axum::Json;
 
 use crate::api::error::ApiError;
 use crate::api::runner::Container;
-use crate::domain::subscription::subscriber::prelude::{
-    Subscriber,
-    SubscriberStatus,
-};
+use crate::domain::subscription::subscriber::prelude::{Subscriber, SubscriberStatus};
 
 #[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
 pub struct Request {
     title: String,
     content: String,

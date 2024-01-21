@@ -1,17 +1,12 @@
 use reqwest::StatusCode;
-use wiremock::matchers::{
-    method,
-    path,
-};
 use wiremock::{
-    Mock,
-    ResponseTemplate,
+    matchers::{method, path},
+    Mock, ResponseTemplate,
 };
 
-use crate::api::helper::app::App;
-use crate::api::helper::cases::{
-    create_confirmed_subscriber,
-    create_unconfirmed_subscriber,
+use crate::api::helper::{
+    app::App,
+    cases::{create_confirmed_subscriber, create_unconfirmed_subscriber},
 };
 
 #[tokio::test]
@@ -19,8 +14,8 @@ async fn newsletters_are_not_delivered_when_title_or_content_is_empty() {
     // given
     let app = App::new().await;
     let wrong_requests = vec![
-        serde_json::json!({"title": "Hi!"}),
-        serde_json::json!({"content": "Hi!"}),
+        serde_json::json!({"Title": "Hi!"}),
+        serde_json::json!({"Content": "Hi!"}),
     ];
 
     for request in wrong_requests {
@@ -47,8 +42,8 @@ async fn newsletters_are_not_delivered_to_unconfirmed_subscribers() {
 
     // when
     let request = serde_json::json!({
-        "title": "Hello",
-        "content": "Good to see you :)",
+        "Title": "Hello",
+        "Content": "Good to see you :)",
     });
     let response = app.post_publication_publish(&request).await;
 
@@ -71,8 +66,8 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
 
     // when
     let reqest_body = serde_json::json!({
-        "title": "Hello",
-        "content": "Good to see you :)",
+        "Title": "Hello",
+        "Content": "Good to see you :)",
     });
     let response = app.post_publication_publish(&reqest_body).await;
 
