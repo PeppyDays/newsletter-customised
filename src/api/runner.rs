@@ -4,12 +4,10 @@ use tokio::net::TcpListener;
 
 use crate::api::router;
 use crate::configuration::ApplicationExposingAddress;
-use crate::domain::subscription::subscriber::prelude::{
-    SubscriberMessenger,
-    SubscriberRepository,
-};
+use crate::domain::subscription::subscriber::prelude::{SubscriberMessenger, SubscriberRepository};
 use crate::domain::subscription::subscription_token::prelude::SubscriptionTokenRepository;
 
+// TODO: Implement FromRef and inject each element of container in handlers
 #[derive(Clone)]
 pub struct Container {
     pub subscriber_repository: Arc<dyn SubscriberRepository>,
