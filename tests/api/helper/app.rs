@@ -158,7 +158,10 @@ impl App {
 // simplify application call testing
 impl App {
     // POST /subscription/subscribe
-    pub async fn post_subscribe<T: Serialize + ?Sized>(&self, parameters: &T) -> reqwest::Response {
+    pub async fn post_subscription_subscribe<T: Serialize + ?Sized>(
+        &self,
+        parameters: &T,
+    ) -> reqwest::Response {
         let url = format!("http://{}/subscription/subscribe", self.address);
         self.client
             .post(url)

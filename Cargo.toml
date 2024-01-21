@@ -38,11 +38,8 @@ validator = "0.16"
 claims = "0.7"
 fake = "2"
 once_cell = "1"
-sqlx = { version = "0.7", features = [
-  "migrate",
-  "postgres",
-  "runtime-tokio-rustls",
-] }
+sea-orm = { version = "0.12", features = ["sea-orm-internal"] }
+sqlx = { version = "0.7", features = ["migrate"] }
 quickcheck = "1"
 quickcheck_macros = "1"
 rand = "0.8"

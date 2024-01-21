@@ -26,7 +26,7 @@ async fn subscription_with_valid_form_returns_201() {
         .await;
 
     // when
-    let response = app.post_subscribe(&parameters).await;
+    let response = app.post_subscription_subscribe(&parameters).await;
 
     // then
     assert_eq!(response.status(), StatusCode::CREATED);
@@ -52,7 +52,7 @@ async fn subscription_with_missing_fields_returns_422() {
 
     for parameters in parameters_set {
         // when
-        let response = app.post_subscribe(&parameters).await;
+        let response = app.post_subscription_subscribe(&parameters).await;
 
         // then
         assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
@@ -69,7 +69,7 @@ async fn subscription_with_too_short_name_returns_400() {
     let parameters = [("email", email), ("name", name)];
 
     // when
-    let response = app.post_subscribe(&parameters).await;
+    let response = app.post_subscription_subscribe(&parameters).await;
 
     // then
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
@@ -96,7 +96,7 @@ async fn subscription_sends_confirmation_email_for_validate_email_address() {
         .await;
 
     // when
-    app.post_subscribe(&parameters).await;
+    app.post_subscription_subscribe(&parameters).await;
 
     // then
     // mock asserts on drop
@@ -118,7 +118,7 @@ async fn subscription_sends_confirmation_email_with_link() {
         .await;
 
     // when
-    app.post_subscribe(&parameters).await;
+    app.post_subscription_subscribe(&parameters).await;
 
     // then
     let request = &app.email_server.received_requests().await.unwrap()[0];
@@ -146,7 +146,7 @@ async fn subscriber_is_confirmed_after_clicking_confirmation_link() {
         .mount(&app.email_server)
         .await;
 
-    app.post_subscribe(&parameters).await;
+    app.post_subscription_subscribe(&parameters).await;
 
     // when
     let request = &app.email_server.received_requests().await.unwrap()[0];
