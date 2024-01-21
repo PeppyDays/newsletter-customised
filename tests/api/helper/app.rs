@@ -184,4 +184,18 @@ impl App {
             .await
             .unwrap()
     }
+
+    // POST /publication/publish
+    pub async fn post_publication_publish<T: Serialize + ?Sized>(
+        &self,
+        parameters: &T,
+    ) -> reqwest::Response {
+        let url = format!("http://{}/publication/publish", self.address);
+        self.client
+            .post(url)
+            .json(&parameters)
+            .send()
+            .await
+            .unwrap()
+    }
 }

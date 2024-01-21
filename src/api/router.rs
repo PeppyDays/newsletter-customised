@@ -5,11 +5,12 @@ use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::api::handlers::{health, subscription};
+use crate::api::handlers::{health, publication, subscription};
 use crate::api::runner::Container;
 
 pub async fn get_router(container: Container) -> Router {
     Router::new()
+        .route("/publication/publish", post(publication::publish::handle))
         .route("/subscription/confirm", get(subscription::confirm::handle))
         .route(
             "/subscription/subscribe",
