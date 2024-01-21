@@ -35,7 +35,7 @@ jobs:
       - name: Run containers
         run: |
           just container-up
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
