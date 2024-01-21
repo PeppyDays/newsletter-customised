@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Context;
 use axum::extract::{
     Query,
@@ -6,20 +8,24 @@ use axum::extract::{
 use axum::http::StatusCode;
 
 use crate::api::error::ApiError;
-use crate::api::runner::Container;
+use crate::domain::subscription::subscriber::prelude::SubscriberRepository;
+use crate::domain::subscription::subscription_token::prelude::SubscriptionTokenRepository;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Request {
     token: String,
 }
 
-#[tracing::instrument(name = "Confirming a subscription", skip(container))]
+#[tracing::instrument(
+    name = "Confirming a subscription",
+    skip(subscriber_repository, subscription_token_repository)
+)]
 pub async fn handle(
-    State(container): State<Container>,
+    State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
+    State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
     Query(request): Query<Request>,
 ) -> Result<(), ApiError> {
-    let subscription_token = container
-        .subscription_token_repository
+    let subscription_token = subscription_token_repository
         .find_by_token(&request.token)
         .await
         .context("Failed to get subscription token")
@@ -32,8 +38,7 @@ pub async fn handle(
         })?;
     let subscriber_id = subscription_token.subscriber_id;
 
-    let mut subscriber = container
-        .subscriber_repository
+    let mut subscriber = subscriber_repository
         .find_by_id(subscriber_id)
         .await
         .context("Failed to get subscriber")
@@ -46,8 +51,7 @@ pub async fn handle(
         })?;
     subscriber.confirm();
 
-    container
-        .subscriber_repository
+    subscriber_repository
         .save(&subscriber)
         .await
         .context("Failed to make the subscriber confirmed")

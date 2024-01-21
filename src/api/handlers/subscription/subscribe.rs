@@ -7,7 +7,7 @@ use axum::Form;
 use uuid::Uuid;
 
 use crate::api::error::ApiError;
-use crate::api::runner::Container;
+use crate::configuration::ApplicationExposingAddress;
 use crate::domain::subscription::subscriber::prelude::*;
 use crate::domain::subscription::subscription_token::prelude::*;
 
@@ -17,13 +17,24 @@ pub struct Request {
     name: String,
 }
 
-#[tracing::instrument(name = "Adding a new subscriber", skip(container))]
+#[tracing::instrument(
+    name = "Adding a new subscriber",
+    skip(
+        subscriber_repository,
+        subscriber_messenger,
+        subscription_token_repository,
+        exposing_address,
+    )
+)]
 pub async fn handle(
-    State(container): State<Container>,
+    State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
+    State(subscriber_messenger): State<Arc<dyn SubscriberMessenger>>,
+    State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
+    State(exposing_address): State<Arc<ApplicationExposingAddress>>,
     Form(request): Form<Request>,
 ) -> Result<StatusCode, ApiError> {
     let id = Uuid::new_v4();
-    let subscriber = register_subscriber(id, request, container.subscriber_repository.clone())
+    let subscriber = register_subscriber(id, request, subscriber_repository.clone())
         .await
         .map_err(|error| match error {
             SubscriberError::InvalidSubscriberName | SubscriberError::InvalidSubscriberEmail => {
@@ -37,7 +48,7 @@ pub async fn handle(
         })?;
 
     let subscription_token =
-        issue_subscription_token(&subscriber, container.subscription_token_repository.clone())
+        issue_subscription_token(&subscriber, subscription_token_repository.clone())
             .await
             .context("Failed to issue a subscription token")
             .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
@@ -45,8 +56,8 @@ pub async fn handle(
     send_confirmation_email(
         &subscriber,
         &subscription_token,
-        &container.exposing_address.url,
-        container.subscriber_messenger.clone(),
+        &exposing_address.url,
+        subscriber_messenger.clone(),
     )
     .await
     .context("Failed to send a confirmation email")
