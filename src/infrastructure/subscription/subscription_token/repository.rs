@@ -54,7 +54,7 @@ impl SubscriptionTokenSeaOrmRepository {
 
 #[async_trait::async_trait]
 impl SubscriptionTokenRepository for SubscriptionTokenSeaOrmRepository {
-    #[tracing::instrument(name = "Saving subscriber token details", skip(self))]
+    #[tracing::instrument(name = "Saving subscription token details", skip(self))]
     async fn save(
         &self,
         subscription_token: &SubscriptionToken,
@@ -68,13 +68,29 @@ impl SubscriptionTokenRepository for SubscriptionTokenSeaOrmRepository {
         Ok(())
     }
 
-    #[tracing::instrument(name = "Searching subscriber token details by token", skip(self))]
+    #[tracing::instrument(name = "Searching subscription token details by token", skip(self))]
     async fn find_by_token(
         &self,
         token: &str,
     ) -> Result<Option<SubscriptionToken>, SubscriptionTokenError> {
         Ok(Entity::find()
             .filter(Column::Token.eq(token))
+            .one(&self.pool)
+            .await
+            .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?
+            .map(SubscriptionToken::from))
+    }
+
+    #[tracing::instrument(
+        name = "Searching subscription token details by subscriber id",
+        skip(self)
+    )]
+    async fn find_by_subscriber_id(
+        &self,
+        subscriber_id: Uuid,
+    ) -> Result<Option<SubscriptionToken>, SubscriptionTokenError> {
+        Ok(Entity::find()
+            .filter(Column::SubscriberId.eq(subscriber_id))
             .one(&self.pool)
             .await
             .map_err(|error| SubscriptionTokenError::RepositoryOperationFailed(error.into()))?
@@ -89,7 +105,7 @@ mod tests {
     use sea_orm::Database;
     use uuid::Uuid;
 
-    use crate::configuration::get_configuration;
+    use crate::{configuration::get_configuration, domain::subscription::subscription_token};
 
     use super::*;
 
@@ -149,5 +165,29 @@ mod tests {
             .unwrap()
             .to_string()
             .contains("duplicate key value violates unique constraint"));
+    }
+
+    #[tokio::test]
+    async fn fetching_by_subscriber_id_after_saving_returns_entity() {
+        // given
+        let repository = get_repository().await;
+        let subscriber_id = Uuid::new_v4();
+        let subscription_token = SubscriptionToken::issue(subscriber_id);
+
+        repository.save(&subscription_token).await.unwrap();
+
+        // when
+        let persisted_subscription_token = repository
+            .find_by_subscriber_id(subscriber_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // then
+        assert_eq!(subscription_token.token, persisted_subscription_token.token);
+        assert_eq!(
+            subscription_token.subscriber_id,
+            persisted_subscription_token.subscriber_id
+        );
     }
 }

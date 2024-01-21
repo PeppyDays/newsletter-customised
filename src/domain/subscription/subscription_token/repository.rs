@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::domain::subscription::subscription_token::error::SubscriptionTokenError;
 use crate::domain::subscription::subscription_token::model::SubscriptionToken;
 
@@ -10,5 +12,9 @@ pub trait SubscriptionTokenRepository: Send + Sync {
     async fn find_by_token(
         &self,
         token: &str,
+    ) -> Result<Option<SubscriptionToken>, SubscriptionTokenError>;
+    async fn find_by_subscriber_id(
+        &self,
+        subscriber_id: Uuid,
     ) -> Result<Option<SubscriptionToken>, SubscriptionTokenError>;
 }
