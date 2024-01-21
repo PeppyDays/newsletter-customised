@@ -61,17 +61,35 @@ struct Request<'a> {
 
 #[cfg(test)]
 mod tests {
-    use claims::{assert_err, assert_ok};
+    use claims::{
+        assert_err,
+        assert_ok,
+    };
     use fake::faker::internet::en::SafeEmail;
-    use fake::faker::lorem::en::{Paragraph, Sentence};
+    use fake::faker::lorem::en::{
+        Paragraph,
+        Sentence,
+    };
     use fake::faker::name::en::FirstName;
     use fake::Fake;
     use uuid::Uuid;
-    use wiremock::matchers::{any, header, header_exists, method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use wiremock::matchers::{
+        any,
+        header,
+        header_exists,
+        method,
+        path,
+    };
+    use wiremock::{
+        Mock,
+        MockServer,
+        ResponseTemplate,
+    };
 
-    use crate::domain::subscription::subscriber::prelude::Subscriber;
-    use crate::domain::subscription::subscriber::prelude::SubscriberMessenger;
+    use crate::domain::subscription::subscriber::prelude::{
+        Subscriber,
+        SubscriberMessenger,
+    };
     use crate::infrastructure::subscription::subscriber::prelude::SubscriberEmailMessenger;
 
     struct SendEmailBodyMatcher;

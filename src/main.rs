@@ -1,8 +1,16 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use newsletter::{api, configuration, infrastructure, telemetry};
-use sea_orm::{ConnectOptions, Database};
+use newsletter::{
+    api,
+    configuration,
+    infrastructure,
+    telemetry,
+};
+use sea_orm::{
+    ConnectOptions,
+    Database,
+};
 use secrecy::ExposeSecret;
 
 #[tokio::main]

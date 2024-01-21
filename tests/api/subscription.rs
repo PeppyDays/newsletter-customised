@@ -1,12 +1,19 @@
 use fake::faker::internet::en::SafeEmail;
 use fake::faker::name::en::FirstName;
 use fake::Fake;
+use newsletter::domain::subscription::subscriber::prelude::{
+    SubscriberRepository,
+    SubscriberStatus,
+};
 use reqwest::StatusCode;
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, ResponseTemplate};
-
-use newsletter::domain::subscription::subscriber::prelude::SubscriberRepository;
-use newsletter::domain::subscription::subscriber::prelude::SubscriberStatus;
+use wiremock::matchers::{
+    method,
+    path,
+};
+use wiremock::{
+    Mock,
+    ResponseTemplate,
+};
 
 use crate::api::helper::app::App;
 

@@ -1,12 +1,17 @@
 use reqwest::StatusCode;
+use wiremock::matchers::{
+    method,
+    path,
+};
 use wiremock::{
-    matchers::{method, path},
-    Mock, ResponseTemplate,
+    Mock,
+    ResponseTemplate,
 };
 
-use crate::api::helper::{
-    app::App,
-    cases::{create_confirmed_subscriber, create_unconfirmed_subscriber},
+use crate::api::helper::app::App;
+use crate::api::helper::cases::{
+    create_confirmed_subscriber,
+    create_unconfirmed_subscriber,
 };
 
 #[tokio::test]

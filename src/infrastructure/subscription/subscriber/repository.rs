@@ -131,9 +131,8 @@ mod tests {
     use fake::Fake;
     use uuid::Uuid;
 
-    use crate::configuration::*;
-
     use super::*;
+    use crate::configuration::*;
 
     async fn get_repository(isolated: bool) -> SubscriberSeaOrmRepository {
         let mut configuration = get_configuration().await;

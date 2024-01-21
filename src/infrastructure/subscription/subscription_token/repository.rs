@@ -105,9 +105,8 @@ mod tests {
     use sea_orm::Database;
     use uuid::Uuid;
 
-    use crate::configuration::get_configuration;
-
     use super::*;
+    use crate::configuration::get_configuration;
 
     async fn get_repository() -> SubscriptionTokenSeaOrmRepository {
         let configuration = get_configuration().await;

@@ -1,17 +1,24 @@
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::{
+    Ipv4Addr,
+    SocketAddr,
+    SocketAddrV4,
+};
 use std::sync::Arc;
 use std::time::Duration;
 
 use fake::Fake;
+use newsletter::infrastructure::subscription::subscriber::prelude::*;
+use newsletter::infrastructure::subscription::subscription_token::prelude::*;
+use newsletter::{
+    api,
+    configuration,
+    telemetry,
+};
 use once_cell::sync::Lazy;
 use sea_orm::ConnectionTrait;
 use serde::Serialize;
 use tokio::net::TcpListener;
 use wiremock::MockServer;
-
-use newsletter::infrastructure::subscription::subscriber::prelude::*;
-use newsletter::infrastructure::subscription::subscription_token::prelude::*;
-use newsletter::{api, configuration, telemetry};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info";

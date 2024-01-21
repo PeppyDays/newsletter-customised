@@ -1,5 +1,8 @@
 use anyhow::Context;
-use axum::extract::{Query, State};
+use axum::extract::{
+    Query,
+    State,
+};
 use axum::http::StatusCode;
 
 use crate::api::error::ApiError;

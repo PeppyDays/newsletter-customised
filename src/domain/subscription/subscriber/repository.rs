@@ -1,6 +1,10 @@
 use uuid::Uuid;
 
-use super::{error::SubscriberError, model::Subscriber, model::SubscriberStatus};
+use super::error::SubscriberError;
+use super::model::{
+    Subscriber,
+    SubscriberStatus,
+};
 
 #[async_trait::async_trait]
 pub trait SubscriberRepository: Send + Sync {
