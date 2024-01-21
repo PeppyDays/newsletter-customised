@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Form;
@@ -38,7 +39,8 @@ pub async fn handle(
     let subscription_token =
         issue_subscription_token(&subscriber, container.subscription_token_repository.clone())
             .await
-            .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
+            .context("Failed to issue a subscription token")
+            .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
     send_confirmation_email(
         &subscriber,
@@ -47,7 +49,8 @@ pub async fn handle(
         container.subscriber_messenger.clone(),
     )
     .await
-    .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
+    .context("Failed to send a confirmation email")
+    .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
     Ok(StatusCode::CREATED)
 }

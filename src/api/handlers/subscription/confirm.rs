@@ -1,3 +1,4 @@
+use anyhow::Context;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 
@@ -18,7 +19,8 @@ pub async fn handle(
         .subscription_token_repository
         .find_by_token(&request.token)
         .await
-        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?
+        .context("Failed to get subscription token")
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?
         .ok_or_else(|| {
             ApiError::new(
                 StatusCode::NOT_FOUND,
@@ -31,7 +33,8 @@ pub async fn handle(
         .subscriber_repository
         .find_by_id(subscriber_id)
         .await
-        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?
+        .context("Failed to get subscriber")
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?
         .ok_or_else(|| {
             ApiError::new(
                 StatusCode::NOT_FOUND,
@@ -44,7 +47,8 @@ pub async fn handle(
         .subscriber_repository
         .save(&subscriber)
         .await
-        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()))?;
+        .context("Failed to make the subscriber confirmed")
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
     Ok(())
 }
