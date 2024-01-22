@@ -47,6 +47,7 @@ jobs:
           just migrate
       - name: Formatting
         run: |
-          just fmt
+          just fmt-check
       - name: Linting
-        run: cargo clippy -- -D warnings
+        run: |
+          just lint-check

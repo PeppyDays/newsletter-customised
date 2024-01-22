@@ -30,7 +30,10 @@ migrate:
 	sqlx migrate run
 
 fmt:
+	cargo +nightly fmt
+
+fmt-check:
 	cargo +nightly fmt --check
 
-lint:
+lint-check:
 	cargo clippy -- -D warnings
