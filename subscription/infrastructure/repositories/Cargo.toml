@@ -1,0 +1,25 @@
+[package]
+name = "repositories"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../../domain" }
+
+sea-orm = { version = "0.12", features = [
+  "sqlx-postgres",
+  "runtime-tokio-rustls",
+  "macros",
+] }
+tokio = { version = "1.35", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1"
+uuid = { version = "1.7", features = ["serde", "v4"] }
+
+[dev-dependencies]
+fake = "2.9"
+sqlx = { version = "0.7", default-features = false, features = [
+  "migrate",
+  "postgres",
+  "macros",
+  "runtime-tokio-rustls",
+] }

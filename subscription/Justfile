@@ -1,0 +1,39 @@
+default:
+	just --list
+
+test: sqlx-migrate
+	cargo test
+
+test-with-log: sqlx-migrate
+	TEST_LOG=true cargo test | bunyan
+
+build:
+	cargo build
+
+run: sqlx-migrate
+	cargo run | bunyan
+
+sqlx-prepare:
+	cargo sqlx prepare --database-url postgres://newsletter:welcome@localhost:5432/newsletter --workspace
+
+watch-run: sqlx-migrate
+	cargo watch -x run | bunyan
+
+container-up:
+	docker compose up -d
+
+container-down:
+	docker compose down
+
+sqlx-migrate:
+	sqlx database create --database-url postgres://newsletter:welcome@localhost:5432/newsletter
+	sqlx migrate run --database-url postgres://newsletter:welcome@localhost:5432/newsletter --source infrastructure/repositories/migrations
+
+fmt:
+	cargo +nightly fmt
+
+fmt-check:
+	cargo +nightly fmt --check
+
+lint-check:
+	cargo clippy -- -D warnings
