@@ -5,8 +5,7 @@ use secrecy::ExposeSecret;
 
 pub async fn run() {
     // read configuration
-    let configuration =
-        api::configuration::get_configuration("interface/api/configuration.yaml").await;
+    let configuration = api::configuration::get_configuration("configuration.yaml").await;
 
     // configure application listener
     let listener = api::configuration::bind_listener(&configuration).await;
