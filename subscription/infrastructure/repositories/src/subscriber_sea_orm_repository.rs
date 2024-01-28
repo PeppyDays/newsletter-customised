@@ -1,9 +1,5 @@
 use domain::prelude::{
-    Subscriber,
-    SubscriberEmail,
-    SubscriberError,
-    SubscriberName,
-    SubscriberRepository,
+    Subscriber, SubscriberEmail, SubscriberError, SubscriberName, SubscriberRepository,
     SubscriberStatus,
 };
 use sea_orm::entity::prelude::*;
@@ -139,16 +135,6 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     #[tokio::test]
-//     async fn saving_second_subscriber_with_existing_email_returns_invalid_subscriber_email_error() {
-//
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
     use fake::faker::internet::en::SafeEmail;
@@ -160,10 +146,10 @@ mod tests {
     use super::*;
 
     async fn get_repository(isolated: bool) -> SubscriberSeaOrmRepository {
-        let url_without_db = "postgres://newsletter:welcome@localhost:5432";
+        let url_without_db = "postgres://subscription:welcome@localhost:15432";
 
         if !isolated {
-            let url = format!("{}/{}", &url_without_db, "newsletter");
+            let url = format!("{}/{}", &url_without_db, "subscription");
             let pool = sea_orm::Database::connect(&url).await.unwrap();
 
             return SubscriberSeaOrmRepository::new(pool);

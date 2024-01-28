@@ -9,10 +9,10 @@ database:
   source:
     engine: PostgreSQL
     host: 127.0.0.1
-    port: 5432
-    username: newsletter
+    port: 15432
+    username: subscription
     password: welcome
-    database: newsletter
+    database: subscription
   pool_options:
     min_connections: 2
     max_connections: 2

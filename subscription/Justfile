@@ -14,7 +14,7 @@ run: sqlx-migrate
 	cargo run | bunyan
 
 sqlx-prepare:
-	cargo sqlx prepare --database-url postgres://newsletter:welcome@localhost:5432/newsletter --workspace
+	cargo sqlx prepare --database-url postgres://newsletter:welcome@localhost:15432/newsletter --workspace
 
 watch-run: sqlx-migrate
 	cargo watch -x run | bunyan
@@ -26,8 +26,8 @@ container-down:
 	docker compose down
 
 sqlx-migrate:
-	sqlx database create --database-url postgres://newsletter:welcome@localhost:5432/newsletter
-	sqlx migrate run --database-url postgres://newsletter:welcome@localhost:5432/newsletter --source infrastructure/repositories/migrations
+	sqlx database create --database-url postgres://subscription:welcome@localhost:15432/subscription
+	sqlx migrate run --database-url postgres://subscription:welcome@localhost:15432/subscription --source infrastructure/repositories/migrations
 
 fmt:
 	cargo +nightly fmt

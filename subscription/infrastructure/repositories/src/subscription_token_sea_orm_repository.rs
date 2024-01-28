@@ -1,8 +1,4 @@
-use domain::prelude::{
-    SubscriptionToken,
-    SubscriptionTokenError,
-    SubscriptionTokenRepository,
-};
+use domain::prelude::{SubscriptionToken, SubscriptionTokenError, SubscriptionTokenRepository};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
@@ -110,10 +106,10 @@ mod tests {
     use super::*;
 
     async fn get_repository(isolated: bool) -> SubscriptionTokenSeaOrmRepository {
-        let url_without_db = "postgres://newsletter:welcome@localhost:5432";
+        let url_without_db = "postgres://subscription:welcome@localhost:15432";
 
         if !isolated {
-            let url = format!("{}/{}", &url_without_db, "newsletter");
+            let url = format!("{}/{}", &url_without_db, "subscription");
             let pool = sea_orm::Database::connect(&url).await.unwrap();
 
             return SubscriptionTokenSeaOrmRepository::new(pool);
