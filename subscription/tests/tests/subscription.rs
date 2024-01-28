@@ -160,7 +160,7 @@ async fn subscriber_is_confirmed_after_clicking_confirmation_link() {
         .collect::<Vec<&str>>()[0];
 
     let parameters = [("token", token)];
-    app.get_subscription_confirm(&parameters).await;
+    app.post_subscription_confirm(&parameters).await;
 
     // then
     let saved_subscriber = app

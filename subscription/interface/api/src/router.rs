@@ -1,28 +1,30 @@
 use axum::extract::MatchedPath;
 use axum::http::Request;
-use axum::routing::{
-    get,
-    post,
-};
+use axum::routing::{get, post};
 use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::handlers::{
-    confirmation,
-    liveness,
-    readiness,
-    subscription,
-};
 use crate::runner::Container;
+use crate::{checkers, executors};
 
 pub async fn get_router(container: Container) -> Router {
     Router::new()
-        .route("/subscription/confirm", get(confirmation::handle))
-        .route("/subscription/subscribe", post(subscription::handle))
-        .route("/health/readiness", get(readiness::handle))
+        // .route(
+        //     "/subscription/query/inquire-active-subscribers/read",
+        //     get(readers::inquire_active_subscribers::read),
+        // )
+        .route(
+            "/subscription/command/confirm/execute",
+            post(executors::confirm::execute),
+        )
+        .route(
+            "/subscription/command/subscribe/execute",
+            post(executors::subscribe::execute),
+        )
+        .route("/health/readiness", get(checkers::readiness::handle))
         .with_state(container)
-        .route("/health/liveness", get(liveness::handle))
+        .route("/health/liveness", get(checkers::liveness::handle))
         .layer(
             // Refer to https://github.com/tokio-rs/axum/blob/main/examples/tracing-aka-logging/Cargo.toml
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

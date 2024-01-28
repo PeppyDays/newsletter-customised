@@ -54,7 +54,7 @@ pub async fn create_confirmed_subscriber(app: &App) -> Subscriber {
         .unwrap();
     let parameters = [("token", subscription_token.token)];
 
-    app.get_subscription_confirm(&parameters).await;
+    app.post_subscription_confirm(&parameters).await;
 
     app.subscriber_repository
         .find_by_id(subscriber.id)

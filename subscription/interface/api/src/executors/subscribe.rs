@@ -4,8 +4,12 @@ use anyhow::Context;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Form;
-use domain::prelude::*;
 use uuid::Uuid;
+
+use domain::prelude::{
+    Subscriber, SubscriberError, SubscriberMessenger, SubscriberRepository, SubscriptionToken,
+    SubscriptionTokenError, SubscriptionTokenRepository,
+};
 
 use crate::error::ApiError;
 
@@ -24,7 +28,7 @@ pub struct Request {
         exposing_address,
     )
 )]
-pub async fn handle(
+pub async fn execute(
     State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
     State(subscriber_messenger): State<Arc<dyn SubscriberMessenger>>,
     State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
@@ -127,6 +131,10 @@ mod tests {
     use fake::faker::name::en::FirstName;
     use fake::Fake;
 
+    use domain::prelude::{
+        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
+    };
+
     use super::*;
 
     #[tokio::test]
@@ -142,7 +150,7 @@ mod tests {
             email: "not-an-email".to_string(),
             name: FirstName().fake(),
         };
-        let response = handle(
+        let response = execute(
             State(Arc::new(subscriber_repository)),
             State(Arc::new(subscriber_messenger)),
             State(Arc::new(subscription_token_repository)),
@@ -174,7 +182,7 @@ mod tests {
             email: SafeEmail().fake(),
             name: FirstName().fake(),
         };
-        let response = handle(
+        let response = execute(
             State(Arc::new(subscriber_repository)),
             State(Arc::new(subscriber_messenger)),
             State(Arc::new(subscription_token_repository)),
@@ -214,7 +222,7 @@ mod tests {
             email: SafeEmail().fake(),
             name: FirstName().fake(),
         };
-        let response = handle(
+        let response = execute(
             State(Arc::new(subscriber_repository)),
             State(Arc::new(subscriber_messenger)),
             State(Arc::new(subscription_token_repository)),

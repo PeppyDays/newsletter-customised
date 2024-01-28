@@ -1,15 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use axum::extract::{
-    Query,
-    State,
-};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
-use domain::prelude::{
-    SubscriberRepository,
-    SubscriptionTokenRepository,
-};
+
+use domain::prelude::{SubscriberRepository, SubscriptionTokenRepository};
 
 use crate::error::ApiError;
 
@@ -22,7 +17,7 @@ pub struct Request {
     name = "Confirming a subscription",
     skip(subscriber_repository, subscription_token_repository)
 )]
-pub async fn handle(
+pub async fn execute(
     State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
     State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
     Query(request): Query<Request>,
@@ -64,16 +59,14 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use domain::prelude::{
-        MockSubscriberRepository,
-        MockSubscriptionTokenRepository,
-        Subscriber,
-        SubscriptionToken,
-    };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
     use fake::Fake;
     use uuid::Uuid;
+
+    use domain::prelude::{
+        MockSubscriberRepository, MockSubscriptionTokenRepository, Subscriber, SubscriptionToken,
+    };
 
     use super::*;
 
@@ -92,7 +85,7 @@ mod tests {
         let request = Request {
             token: "not-existing-token".to_string(),
         };
-        let response = handle(
+        let response = execute(
             State(Arc::new(subscriber_repository)),
             State(Arc::new(subscription_token_repository)),
             Query(request),
@@ -124,7 +117,7 @@ mod tests {
         let request = Request {
             token: "existing-token".to_string(),
         };
-        let response = handle(
+        let response = execute(
             State(Arc::new(subscriber_repository)),
             State(Arc::new(subscription_token_repository)),
             Query(request),
@@ -167,7 +160,7 @@ mod tests {
         let request = Request {
             token: "existing-token".to_string(),
         };
-        let response = handle(
+        let response = execute(
             State(Arc::new(subscriber_repository)),
             State(Arc::new(subscription_token_repository)),
             Query(request),
