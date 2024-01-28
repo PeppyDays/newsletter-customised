@@ -3,12 +3,14 @@ use std::time::Duration;
 
 use secrecy::ExposeSecret;
 
+use crate::configuration;
+
 pub async fn run() {
     // read configuration
-    let configuration = api::configuration::get_configuration("configuration.yaml").await;
+    let configuration = configuration::get_configuration("configuration.yaml").await;
 
     // configure application listener
-    let listener = api::configuration::bind_listener(&configuration).await;
+    let listener = configuration::bind_listener(&configuration).await;
 
     // configure database connection pool
     let mut database_connection_options = repositories::prelude::DatabaseConnectionOptions::new(
@@ -74,7 +76,7 @@ pub async fn run() {
         subscriber_repository: Arc::new(subscriber_repository),
         subscription_token_repository: Arc::new(subscription_token_repository),
         subscriber_messenger: Arc::new(subscriber_messenger),
-        exposing_address: Arc::new(configuration.application.exposing_address),
+        exposing_address: Arc::new(configuration.application.exposing_address.url),
     };
 
     // run the application api

@@ -1,18 +1,18 @@
 use confique::Config;
-use secrecy::{
-    ExposeSecret,
-    Secret,
-};
+use secrecy::{ExposeSecret, Secret};
 use tokio::net::TcpListener;
 
 #[derive(Debug, Config)]
 pub struct Configuration {
     #[config(nested)]
     pub application: ApplicationConfiguration,
+
     #[config(nested)]
     pub database: DatabaseConfiguration,
+
     #[config(nested)]
     pub messenger: MessengerConfiguration,
+
     #[config(nested)]
     pub logging: LoggingConfiguration,
 }
@@ -21,6 +21,7 @@ pub struct Configuration {
 pub struct ApplicationConfiguration {
     #[config(nested)]
     pub listening_address: ApplicationListeningAddress,
+
     #[config(nested)]
     pub exposing_address: ApplicationExposingAddress,
 }
@@ -29,6 +30,7 @@ pub struct ApplicationConfiguration {
 pub struct ApplicationListeningAddress {
     #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_HOST")]
     pub host: String,
+
     #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_PORT")]
     pub port: u16,
 }
@@ -43,6 +45,7 @@ pub struct ApplicationExposingAddress {
 pub struct DatabaseConfiguration {
     #[config(nested)]
     pub source: DatabaseSource,
+
     #[config(nested)]
     pub pool_options: DatabasePoolOptions,
 }
@@ -51,12 +54,16 @@ pub struct DatabaseConfiguration {
 pub struct DatabaseSource {
     #[config(env = "APP_DATABASE_SOURCE_HOST")]
     pub host: String,
+
     #[config(env = "APP_DATABASE_SOURCE_PORT")]
     pub port: u16,
+
     #[config(env = "APP_DATABASE_SOURCE_USERNAME")]
     pub username: String,
+
     #[config(env = "APP_DATABASE_SOURCE_PASSWORD")]
     pub password: Secret<String>,
+
     #[config(env = "APP_DATABASE_SOURCE_DATABASE")]
     pub database: String,
 }
@@ -91,6 +98,7 @@ impl DatabaseConfiguration {
 pub struct MessengerConfiguration {
     #[config(nested)]
     pub email: EmailService,
+
     #[config(nested)]
     pub pool_options: EmailClientPoolOptions,
 }

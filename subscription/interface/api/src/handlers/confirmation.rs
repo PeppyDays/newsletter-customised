@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
+
 use domain::prelude::{SubscriberRepository, SubscriptionTokenRepository};
 
 use crate::error::ApiError;

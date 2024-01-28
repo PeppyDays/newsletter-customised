@@ -4,10 +4,10 @@ use anyhow::Context;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Form;
-use domain::prelude::*;
 use uuid::Uuid;
 
-use crate::configuration::ApplicationExposingAddress;
+use domain::prelude::*;
+
 use crate::error::ApiError;
 
 #[derive(serde::Deserialize, Debug)]
@@ -29,7 +29,7 @@ pub async fn handle(
     State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
     State(subscriber_messenger): State<Arc<dyn SubscriberMessenger>>,
     State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
-    State(exposing_address): State<Arc<ApplicationExposingAddress>>,
+    State(exposing_address): State<Arc<String>>,
     Form(request): Form<Request>,
 ) -> Result<StatusCode, ApiError> {
     let id = Uuid::new_v4();
@@ -55,7 +55,7 @@ pub async fn handle(
     send_confirmation_email(
         &subscriber,
         &subscription_token,
-        &exposing_address.url,
+        &exposing_address,
         subscriber_messenger.clone(),
     )
     .await
@@ -137,9 +137,7 @@ mod tests {
         let subscriber_repository = MockSubscriberRepository::new();
         let subscriber_messenger = MockSubscriberMessenger::new();
         let subscription_token_repository = MockSubscriptionTokenRepository::new();
-        let exposing_address = ApplicationExposingAddress {
-            url: "http://localhost:3000".to_string(),
-        };
+        let exposing_address = "http://localhost:3000".to_string();
 
         // when
         let request = Request {
@@ -166,9 +164,7 @@ mod tests {
         let mut subscriber_repository = MockSubscriberRepository::new();
         let subscriber_messenger = MockSubscriberMessenger::new();
         let subscription_token_repository = MockSubscriptionTokenRepository::new();
-        let exposing_address = ApplicationExposingAddress {
-            url: "http://localhost:3000".to_string(),
-        };
+        let exposing_address = "http://localhost:3000".to_string();
 
         subscriber_repository
             .expect_save()
@@ -200,9 +196,7 @@ mod tests {
         let mut subscriber_repository = MockSubscriberRepository::new();
         let mut subscriber_messenger = MockSubscriberMessenger::new();
         let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
-        let exposing_address = ApplicationExposingAddress {
-            url: "http://localhost:3000".to_string(),
-        };
+        let exposing_address = "http://localhost:3000".to_string();
 
         subscriber_repository
             .expect_save()

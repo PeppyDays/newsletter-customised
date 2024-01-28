@@ -1,14 +1,10 @@
 use std::sync::Arc;
 
 use axum::extract::FromRef;
-use domain::prelude::{
-    SubscriberMessenger,
-    SubscriberRepository,
-    SubscriptionTokenRepository,
-};
 use tokio::net::TcpListener;
 
-use crate::configuration::ApplicationExposingAddress;
+use domain::prelude::{SubscriberMessenger, SubscriberRepository, SubscriptionTokenRepository};
+
 use crate::router;
 
 #[derive(Clone)]
@@ -16,7 +12,7 @@ pub struct Container {
     pub subscriber_repository: Arc<dyn SubscriberRepository>,
     pub subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
     pub subscriber_messenger: Arc<dyn SubscriberMessenger>,
-    pub exposing_address: Arc<ApplicationExposingAddress>,
+    pub exposing_address: Arc<String>,
 }
 
 impl FromRef<Container> for Arc<dyn SubscriberRepository> {
@@ -37,7 +33,7 @@ impl FromRef<Container> for Arc<dyn SubscriberMessenger> {
     }
 }
 
-impl FromRef<Container> for Arc<ApplicationExposingAddress> {
+impl FromRef<Container> for Arc<String> {
     fn from_ref(container: &Container) -> Self {
         container.exposing_address.clone()
     }
