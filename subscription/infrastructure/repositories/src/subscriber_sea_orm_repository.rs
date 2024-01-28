@@ -1,11 +1,12 @@
-use domain::prelude::{
-    Subscriber, SubscriberEmail, SubscriberError, SubscriberName, SubscriberRepository,
-    SubscriberStatus,
-};
 use sea_orm::entity::prelude::*;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
+
+use domain::prelude::{
+    Subscriber, SubscriberEmail, SubscriberError, SubscriberName, SubscriberRepository,
+    SubscriberStatus,
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscribers")]
@@ -145,162 +146,158 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
 //     }
 // }
 
-// #[cfg(test)]
-// mod tests {
-//     use domain::prelude::{Subscriber, SubscriberStatus};
-//     use fake::faker::internet::en::SafeEmail;
-//     use fake::faker::name::en::FirstName;
-//     use fake::Fake;
-//     use uuid::Uuid;
-//
-//     use crate::subscriber_sea_orm_repository::SubscriberSeaOrmRepository;
-//
-//     async fn get_repository(isolated: bool) -> SubscriberSeaOrmRepository {
-//         let mut configuration = get_configuration().await;
-//
-//         if !isolated {
-//             let pool = sea_orm::Database::connect(
-//                 &configuration.database.connection_string_with_database(),
-//             )
-//             .await
-//             .unwrap();
-//
-//             return SubscriberSeaOrmRepository::new(pool);
-//         }
-//
-//         let database = format!("{}_{}", "test", 10.fake::<String>());
-//         configuration.database.source.database = database.clone();
-//
-//         let connection = sea_orm::Database::connect(
-//             &configuration.database.connection_string_without_database(),
-//         )
-//         .await
-//         .unwrap();
-//
-//         // https://www.sea-ql.org/sea-orm-tutorial/ch02-02-connect-to-database.html
-//         match connection.get_database_backend() {
-//             sea_orm::DatabaseBackend::MySql => {
-//                 connection
-//                     .execute(sea_orm::Statement::from_string(
-//                         sea_orm::DatabaseBackend::MySql,
-//                         format!("CREATE SCHEMA IF NOT EXISTS `{}`;", &database),
-//                     ))
-//                     .await
-//                     .unwrap();
-//             }
-//             sea_orm::DatabaseBackend::Postgres => {
-//                 connection
-//                     .execute(sea_orm::Statement::from_string(
-//                         sea_orm::DatabaseBackend::Postgres,
-//                         format!("DROP DATABASE IF EXISTS \"{}\";", &database),
-//                     ))
-//                     .await
-//                     .unwrap();
-//
-//                 connection
-//                     .execute(sea_orm::Statement::from_string(
-//                         sea_orm::DatabaseBackend::Postgres,
-//                         format!("CREATE DATABASE \"{}\";", &database),
-//                     ))
-//                     .await
-//                     .unwrap();
-//             }
-//             sea_orm::DatabaseBackend::Sqlite => (),
-//         };
-//
-//         let pool =
-//             sea_orm::Database::connect(&configuration.database.connection_string_with_database())
-//                 .await
-//                 .unwrap();
-//
-//         sqlx::migrate!("./migrations")
-//             .run(pool.get_postgres_connection_pool())
-//             .await
-//             .unwrap();
-//
-//         SubscriberSeaOrmRepository::new(pool)
-//     }
-//
-//     fn generate_subscriber() -> Subscriber {
-//         let id = Uuid::new_v4();
-//         let email = SafeEmail().fake();
-//         let name = FirstName().fake();
-//
-//         Subscriber::new(id, email, name).unwrap()
-//     }
-//
-//     #[tokio::test]
-//     async fn fetching_by_id_after_saving_via_repository_makes_the_same_subscriber() {
-//         // given
-//         let repository = get_repository(false).await;
-//         let subscriber = generate_subscriber();
-//
-//         // when
-//         repository.save(&subscriber).await.unwrap();
-//
-//         // then
-//         let saved_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
-//         assert_eq!(saved_subscriber.id, subscriber.id);
-//         assert_eq!(saved_subscriber.email, subscriber.email);
-//         assert_eq!(saved_subscriber.name, subscriber.name);
-//         assert_eq!(saved_subscriber.status, subscriber.status);
-//     }
-//
-//     #[tokio::test]
-//     async fn fetching_not_existing_subscriber_should_return_option_null() {
-//         // given
-//         let repository = get_repository(false).await;
-//         let subscriber = generate_subscriber();
-//
-//         // when
-//         // do nothing, not saved subscriber
-//
-//         // then
-//         let not_existing_subscriber = repository.find_by_id(subscriber.id).await.unwrap();
-//         assert!(not_existing_subscriber.is_none());
-//     }
-//
-//     #[tokio::test]
-//     async fn saving_entity_two_times_will_update_original_entity() {
-//         // given
-//         let repository = get_repository(false).await;
-//         let mut subscriber = generate_subscriber();
-//         assert_eq!(subscriber.status, SubscriberStatus::Unconfirmed);
-//
-//         repository.save(&subscriber).await.unwrap();
-//
-//         // when
-//         subscriber.status = SubscriberStatus::Confirmed;
-//         repository.save(&subscriber).await.unwrap();
-//
-//         // then
-//         let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
-//         assert_eq!(persisted_subscriber.status, SubscriberStatus::Confirmed);
-//     }
-//
-//     #[tokio::test]
-//     async fn searching_by_status_with_confirmed_returns_only_confirmed_subscribers() {
-//         // given
-//         let repository = get_repository(true).await;
-//         let unconfirmed_subscriber_1 = generate_subscriber();
-//         let unconfirmed_subscriber_2 = generate_subscriber();
-//         let mut confirmed_subscriber = generate_subscriber();
-//         confirmed_subscriber.status = SubscriberStatus::Confirmed;
-//
-//         repository.save(&unconfirmed_subscriber_1).await.unwrap();
-//         repository.save(&unconfirmed_subscriber_2).await.unwrap();
-//         repository.save(&confirmed_subscriber).await.unwrap();
-//
-//         // when
-//         let response = repository
-//             .find_by_status(SubscriberStatus::Confirmed)
-//             .await
-//             .unwrap();
-//
-//         // then
-//         assert_eq!(response.len(), 1);
-//
-//         let persisted_subscriber = response.first().unwrap();
-//         assert_eq!(persisted_subscriber.id, confirmed_subscriber.id);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use fake::faker::internet::en::SafeEmail;
+    use fake::faker::name::en::FirstName;
+    use fake::Fake;
+    use sea_orm::ConnectionTrait;
+    use uuid::Uuid;
+
+    use super::*;
+
+    async fn get_repository(isolated: bool) -> SubscriberSeaOrmRepository {
+        let url_without_db = "postgres://newsletter:welcome@localhost:5432";
+
+        if !isolated {
+            let url = format!("{}/{}", &url_without_db, "newsletter");
+            let pool = sea_orm::Database::connect(&url).await.unwrap();
+
+            return SubscriberSeaOrmRepository::new(pool);
+        }
+
+        let db = format!("{}_{}", "test", 10.fake::<String>());
+        let url = format!("{}/{}", url_without_db, db);
+
+        // https://www.sea-ql.org/sea-orm-tutorial/ch02-02-connect-to-database.html
+        let connection = sea_orm::Database::connect(url_without_db).await.unwrap();
+        connection
+            .execute(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("DROP DATABASE IF EXISTS \"{}\";", &db),
+            ))
+            .await
+            .unwrap();
+        connection
+            .execute(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("CREATE DATABASE \"{}\";", &db),
+            ))
+            .await
+            .unwrap();
+
+        let pool = sea_orm::Database::connect(&url).await.unwrap();
+        sqlx::migrate!("./migrations")
+            .run(pool.get_postgres_connection_pool())
+            .await
+            .unwrap();
+
+        SubscriberSeaOrmRepository::new(pool)
+    }
+
+    fn generate_subscriber() -> Subscriber {
+        let id = Uuid::new_v4();
+        let email = SafeEmail().fake();
+        let name = FirstName().fake();
+
+        Subscriber::new(id, email, name).unwrap()
+    }
+
+    #[tokio::test]
+    async fn fetching_by_id_after_saving_via_repository_makes_the_same_subscriber() {
+        // given
+        let repository = get_repository(false).await;
+        let subscriber = generate_subscriber();
+
+        // when
+        repository.save(&subscriber).await.unwrap();
+
+        // then
+        let saved_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
+        assert_eq!(saved_subscriber.id, subscriber.id);
+        assert_eq!(saved_subscriber.email, subscriber.email);
+        assert_eq!(saved_subscriber.name, subscriber.name);
+        assert_eq!(saved_subscriber.status, subscriber.status);
+    }
+
+    #[tokio::test]
+    async fn fetching_not_existing_subscriber_should_return_option_null() {
+        // given
+        let repository = get_repository(false).await;
+        let subscriber = generate_subscriber();
+
+        // when
+        // do nothing, not saved subscriber
+
+        // then
+        let not_existing_subscriber = repository.find_by_id(subscriber.id).await.unwrap();
+        assert!(not_existing_subscriber.is_none());
+    }
+
+    #[tokio::test]
+    async fn saving_entity_two_times_will_update_original_entity() {
+        // given
+        let repository = get_repository(false).await;
+        let mut subscriber = generate_subscriber();
+        assert_eq!(subscriber.status, SubscriberStatus::Unconfirmed);
+
+        repository.save(&subscriber).await.unwrap();
+
+        // when
+        subscriber.status = SubscriberStatus::Confirmed;
+        repository.save(&subscriber).await.unwrap();
+
+        // then
+        let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
+        assert_eq!(persisted_subscriber.status, SubscriberStatus::Confirmed);
+    }
+
+    #[tokio::test]
+    async fn searching_by_status_with_confirmed_returns_only_confirmed_subscribers() {
+        // given
+        let repository = get_repository(true).await;
+        let unconfirmed_subscriber_1 = generate_subscriber();
+        let unconfirmed_subscriber_2 = generate_subscriber();
+        let mut confirmed_subscriber = generate_subscriber();
+        confirmed_subscriber.status = SubscriberStatus::Confirmed;
+
+        repository.save(&unconfirmed_subscriber_1).await.unwrap();
+        repository.save(&unconfirmed_subscriber_2).await.unwrap();
+        repository.save(&confirmed_subscriber).await.unwrap();
+
+        // when
+        let response = repository
+            .find_by_status(SubscriberStatus::Confirmed)
+            .await
+            .unwrap();
+
+        // then
+        assert_eq!(response.len(), 1);
+
+        let persisted_subscriber = response.first().unwrap();
+        assert_eq!(persisted_subscriber.id, confirmed_subscriber.id);
+    }
+
+    #[tokio::test]
+    async fn saving_second_subscriber_with_existing_email_returns_invalid_subscriber_email_error() {
+        // given
+        let repository = get_repository(false).await;
+        let mut confirmed_subscriber = generate_subscriber();
+        confirmed_subscriber.status = SubscriberStatus::Confirmed;
+
+        repository.save(&confirmed_subscriber).await.unwrap();
+
+        // when
+        let mut new_subscriber_with_same_email = generate_subscriber();
+        new_subscriber_with_same_email.email = confirmed_subscriber.email;
+
+        let response = repository.save(&new_subscriber_with_same_email).await;
+
+        // then
+        assert!(response.is_err());
+        assert!(matches!(
+            response.unwrap_err(),
+            SubscriberError::InvalidSubscriberEmail
+        ));
+    }
+}

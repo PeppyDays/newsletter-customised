@@ -1,11 +1,8 @@
-use domain::prelude::{
-    SubscriptionToken,
-    SubscriptionTokenError,
-    SubscriptionTokenRepository,
-};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
+
+use domain::prelude::{SubscriptionToken, SubscriptionTokenError, SubscriptionTokenRepository};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscription_tokens")]
@@ -101,95 +98,122 @@ impl SubscriptionTokenRepository for SubscriptionTokenSeaOrmRepository {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::error::Error;
-//
-//     use sea_orm::Database;
-//     use uuid::Uuid;
-//
-//     use super::*;
-//     use crate::configuration::get_configuration;
-//
-//     async fn get_repository() -> SubscriptionTokenSeaOrmRepository {
-//         let configuration = get_configuration().await;
-//
-//         SubscriptionTokenSeaOrmRepository::new(
-//             Database::connect(&configuration.database.connection_string_without_database())
-//                 .await
-//                 .unwrap(),
-//         )
-//     }
-//
-//     #[tokio::test]
-//     async fn fetching_by_token_after_saving_via_repository_makes_the_same_subscription_token() {
-//         // given
-//         let repository = get_repository().await;
-//         let subscriber_id = Uuid::new_v4();
-//         let subscription_token = SubscriptionToken::issue(subscriber_id);
-//
-//         // when
-//         repository.save(&subscription_token).await.unwrap();
-//
-//         // then
-//         let saved_subscription_token = repository
-//             .find_by_token(&subscription_token.token)
-//             .await
-//             .unwrap()
-//             .unwrap();
-//         assert_eq!(saved_subscription_token.token, subscription_token.token);
-//         assert_eq!(
-//             saved_subscription_token.subscriber_id,
-//             subscription_token.subscriber_id
-//         );
-//     }
-//
-//     #[tokio::test]
-//     async fn saving_duplicate_token_is_not_allowed() {
-//         // given
-//         let repository = get_repository().await;
-//         let subscription_token_1 = SubscriptionToken::issue(Uuid::new_v4());
-//         let mut subscription_token_2 = SubscriptionToken::issue(Uuid::new_v4());
-//         subscription_token_2.token = subscription_token_1.token.clone();
-//
-//         repository.save(&subscription_token_1).await.unwrap();
-//
-//         // when
-//         let error = repository.save(&subscription_token_2).await.unwrap_err();
-//
-//         // then
-//         assert!(matches!(
-//             error,
-//             SubscriptionTokenError::RepositoryOperationFailed(..)
-//         ));
-//         assert!(error
-//             .source()
-//             .unwrap()
-//             .to_string()
-//             .contains("duplicate key value violates unique constraint"));
-//     }
-//
-//     #[tokio::test]
-//     async fn fetching_by_subscriber_id_after_saving_returns_entity() {
-//         // given
-//         let repository = get_repository().await;
-//         let subscriber_id = Uuid::new_v4();
-//         let subscription_token = SubscriptionToken::issue(subscriber_id);
-//
-//         repository.save(&subscription_token).await.unwrap();
-//
-//         // when
-//         let persisted_subscription_token = repository
-//             .find_by_subscriber_id(subscriber_id)
-//             .await
-//             .unwrap()
-//             .unwrap();
-//
-//         // then
-//         assert_eq!(subscription_token.token, persisted_subscription_token.token);
-//         assert_eq!(
-//             subscription_token.subscriber_id,
-//             persisted_subscription_token.subscriber_id
-//         );
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use fake::Fake;
+
+    use super::*;
+
+    async fn get_repository(isolated: bool) -> SubscriptionTokenSeaOrmRepository {
+        let url_without_db = "postgres://newsletter:welcome@localhost:5432";
+
+        if !isolated {
+            let url = format!("{}/{}", &url_without_db, "newsletter");
+            let pool = sea_orm::Database::connect(&url).await.unwrap();
+
+            return SubscriptionTokenSeaOrmRepository::new(pool);
+        }
+
+        let db = format!("{}_{}", "test", 10.fake::<String>());
+        let url = format!("{}/{}", url_without_db, db);
+
+        // https://www.sea-ql.org/sea-orm-tutorial/ch02-02-connect-to-database.html
+        let connection = sea_orm::Database::connect(url_without_db).await.unwrap();
+        connection
+            .execute(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("DROP DATABASE IF EXISTS \"{}\";", &db),
+            ))
+            .await
+            .unwrap();
+        connection
+            .execute(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!("CREATE DATABASE \"{}\";", &db),
+            ))
+            .await
+            .unwrap();
+
+        let pool = sea_orm::Database::connect(&url).await.unwrap();
+        sqlx::migrate!("./migrations")
+            .run(pool.get_postgres_connection_pool())
+            .await
+            .unwrap();
+
+        SubscriptionTokenSeaOrmRepository::new(pool)
+    }
+
+    #[tokio::test]
+    async fn fetching_by_token_after_saving_via_repository_makes_the_same_subscription_token() {
+        // given
+        let repository = get_repository(false).await;
+        let subscriber_id = Uuid::new_v4();
+        let subscription_token = SubscriptionToken::issue(subscriber_id);
+
+        // when
+        repository.save(&subscription_token).await.unwrap();
+
+        // then
+        let saved_subscription_token = repository
+            .find_by_token(&subscription_token.token)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(saved_subscription_token.token, subscription_token.token);
+        assert_eq!(
+            saved_subscription_token.subscriber_id,
+            subscription_token.subscriber_id
+        );
+    }
+
+    #[tokio::test]
+    async fn saving_duplicate_token_is_not_allowed() {
+        // given
+        let repository = get_repository(false).await;
+        let subscription_token_1 = SubscriptionToken::issue(Uuid::new_v4());
+        let mut subscription_token_2 = SubscriptionToken::issue(Uuid::new_v4());
+        subscription_token_2.token = subscription_token_1.token.clone();
+
+        repository.save(&subscription_token_1).await.unwrap();
+
+        // when
+        let error = repository.save(&subscription_token_2).await.unwrap_err();
+
+        // then
+        assert!(matches!(
+            error,
+            SubscriptionTokenError::RepositoryOperationFailed(..)
+        ));
+        assert!(error
+            .source()
+            .unwrap()
+            .to_string()
+            .contains("duplicate key value violates unique constraint"));
+    }
+
+    #[tokio::test]
+    async fn fetching_by_subscriber_id_after_saving_returns_entity() {
+        // given
+        let repository = get_repository(false).await;
+        let subscriber_id = Uuid::new_v4();
+        let subscription_token = SubscriptionToken::issue(subscriber_id);
+
+        repository.save(&subscription_token).await.unwrap();
+
+        // when
+        let persisted_subscription_token = repository
+            .find_by_subscriber_id(subscriber_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // then
+        assert_eq!(subscription_token.token, persisted_subscription_token.token);
+        assert_eq!(
+            subscription_token.subscriber_id,
+            persisted_subscription_token.subscriber_id
+        );
+    }
+}
