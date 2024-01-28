@@ -6,6 +6,7 @@ members = [
   "infrastructure/repositories",
   "infrastructure/messengers",
   "domain",
+  "tests",
 ]
 
 [workspace.lints.rust]

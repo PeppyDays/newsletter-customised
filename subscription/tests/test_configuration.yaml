@@ -1,0 +1,31 @@
+application:
+  listening_address:
+    host: 127.0.0.1
+    port: 8080
+  exposing_address:
+    url: http://127.0.0.1
+
+database:
+  source:
+    engine: PostgreSQL
+    host: 127.0.0.1
+    port: 5432
+    username: newsletter
+    password: welcome
+    database: newsletter
+  pool_options:
+    min_connections: 2
+    max_connections: 2
+    connect_timeout: 3 # seconds
+
+messenger:
+  email:
+    url: http://127.0.0.1
+    api_key: welcome
+    sender: newsletter@example.com
+  pool_options:
+    connection_timeout: 3 # seconds
+    request_timeout: 1 # seconds
+
+logging:
+  level: info
