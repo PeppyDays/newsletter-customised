@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+  "runner",
+  "interface/api",
+  "infrastructure/gateways",
+  "domain",
+  "tests",
+]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
