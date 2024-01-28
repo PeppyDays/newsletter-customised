@@ -31,6 +31,7 @@ impl From<&Subscriber> for ActiveModel {
             id: ActiveValue::Set(subscriber.id),
             email: ActiveValue::Set(subscriber.email.as_ref().to_string()),
             name: ActiveValue::Set(subscriber.name.as_ref().to_string()),
+            // TODO: Find a cleaner way to serialise and deserialise enum
             status: ActiveValue::Set(match subscriber.status {
                 SubscriberStatus::Confirmed => "Confirmed".to_string(),
                 SubscriberStatus::Unconfirmed => "Unconfirmed".to_string(),
