@@ -1,1 +1,1 @@
-pub mod inquire_active_subscribers;
+pub mod inquire_confirmed_subscribers;

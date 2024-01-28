@@ -6,14 +6,14 @@ use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
 use crate::runner::Container;
-use crate::{checkers, executors};
+use crate::{checkers, executors, readers};
 
 pub async fn get_router(container: Container) -> Router {
     Router::new()
-        // .route(
-        //     "/subscription/query/inquire-active-subscribers/read",
-        //     get(readers::inquire_active_subscribers::read),
-        // )
+        .route(
+            "/subscription/query/inquire-confirmed-subscribers/read",
+            get(readers::inquire_confirmed_subscribers::read),
+        )
         .route(
             "/subscription/command/confirm/execute",
             post(executors::confirm::execute),
