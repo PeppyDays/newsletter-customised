@@ -20,7 +20,7 @@ pub async fn handle(
     State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
     State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
     Query(request): Query<Request>,
-) -> Result<(), ApiError> {
+) -> Result<StatusCode, ApiError> {
     let subscription_token = subscription_token_repository
         .find_by_token(&request.token)
         .await
@@ -53,7 +53,7 @@ pub async fn handle(
         .context("Failed to make the subscriber confirmed")
         .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
-    Ok(())
+    Ok(StatusCode::OK)
 }
 
 #[cfg(test)]
@@ -168,5 +168,6 @@ mod tests {
 
         // then
         assert!(response.is_ok());
+        assert_eq!(response.unwrap(), StatusCode::OK)
     }
 }

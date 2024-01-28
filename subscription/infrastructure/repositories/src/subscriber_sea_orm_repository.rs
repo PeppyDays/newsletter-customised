@@ -1,9 +1,5 @@
 use domain::prelude::{
-    Subscriber,
-    SubscriberEmail,
-    SubscriberError,
-    SubscriberName,
-    SubscriberRepository,
+    Subscriber, SubscriberEmail, SubscriberError, SubscriberName, SubscriberRepository,
     SubscriberStatus,
 };
 use sea_orm::entity::prelude::*;
@@ -84,7 +80,16 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
             )
             .exec(&self.pool)
             .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?;
+            .map_err(|error| {
+                if error
+                    .to_string()
+                    .contains("duplicate key value violates unique constraint")
+                {
+                    SubscriberError::InvalidSubscriberEmail
+                } else {
+                    SubscriberError::RepositoryOperationFailed(error.into())
+                }
+            })?;
 
         Ok(())
     }
@@ -129,6 +134,16 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
             .collect())
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     #[tokio::test]
+//     async fn saving_second_subscriber_with_existing_email_returns_invalid_subscriber_email_error() {
+//
+//     }
+// }
 
 // #[cfg(test)]
 // mod tests {

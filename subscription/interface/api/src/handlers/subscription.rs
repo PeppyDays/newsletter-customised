@@ -121,3 +121,118 @@ async fn send_confirmation_email(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use fake::{
+        faker::{internet::en::SafeEmail, name::en::FirstName},
+        Fake,
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn subscription_with_invalid_email_returns_bad_request() {
+        // given
+        let subscriber_repository = MockSubscriberRepository::new();
+        let subscriber_messenger = MockSubscriberMessenger::new();
+        let subscription_token_repository = MockSubscriptionTokenRepository::new();
+        let exposing_address = ApplicationExposingAddress {
+            url: "http://localhost:3000".to_string(),
+        };
+
+        // when
+        let request = Request {
+            email: "not-an-email".to_string(),
+            name: FirstName().fake(),
+        };
+        let response = handle(
+            State(Arc::new(subscriber_repository)),
+            State(Arc::new(subscriber_messenger)),
+            State(Arc::new(subscription_token_repository)),
+            State(Arc::new(exposing_address)),
+            Form(request),
+        )
+        .await;
+
+        // then
+        assert!(response.is_err());
+        assert_eq!(response.unwrap_err().code, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn subscription_with_duplicate_email_returns_bad_request() {
+        // given
+        let mut subscriber_repository = MockSubscriberRepository::new();
+        let subscriber_messenger = MockSubscriberMessenger::new();
+        let subscription_token_repository = MockSubscriptionTokenRepository::new();
+        let exposing_address = ApplicationExposingAddress {
+            url: "http://localhost:3000".to_string(),
+        };
+
+        subscriber_repository
+            .expect_save()
+            .once()
+            .returning(|_| Err(SubscriberError::InvalidSubscriberEmail));
+
+        // when
+        let request = Request {
+            email: SafeEmail().fake(),
+            name: FirstName().fake(),
+        };
+        let response = handle(
+            State(Arc::new(subscriber_repository)),
+            State(Arc::new(subscriber_messenger)),
+            State(Arc::new(subscription_token_repository)),
+            State(Arc::new(exposing_address)),
+            Form(request),
+        )
+        .await;
+
+        // then
+        assert!(response.is_err());
+        assert_eq!(response.unwrap_err().code, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn subscription_returns_200_when_infrastructure_succeed() {
+        // given
+        let mut subscriber_repository = MockSubscriberRepository::new();
+        let mut subscriber_messenger = MockSubscriberMessenger::new();
+        let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
+        let exposing_address = ApplicationExposingAddress {
+            url: "http://localhost:3000".to_string(),
+        };
+
+        subscriber_repository
+            .expect_save()
+            .once()
+            .returning(|_| Ok(()));
+        subscription_token_repository
+            .expect_save()
+            .once()
+            .returning(|_| Ok(()));
+        subscriber_messenger
+            .expect_send()
+            .once()
+            .returning(|_, _, _| Ok(()));
+
+        // when
+        let request = Request {
+            email: SafeEmail().fake(),
+            name: FirstName().fake(),
+        };
+        let response = handle(
+            State(Arc::new(subscriber_repository)),
+            State(Arc::new(subscriber_messenger)),
+            State(Arc::new(subscription_token_repository)),
+            State(Arc::new(exposing_address)),
+            Form(request),
+        )
+        .await;
+
+        // then
+        assert!(response.is_ok());
+        assert_eq!(response.unwrap(), StatusCode::CREATED);
+    }
+}
