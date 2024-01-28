@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
 use axum::extract::FromRef;
+use domain::prelude::{
+    SubscriberMessenger,
+    SubscriberRepository,
+    SubscriptionTokenRepository,
+};
 use tokio::net::TcpListener;
-
-use domain::prelude::{SubscriberMessenger, SubscriberRepository, SubscriptionTokenRepository};
 
 use crate::router;
 

@@ -1,5 +1,8 @@
 use confique::Config;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{
+    ExposeSecret,
+    Secret,
+};
 use tokio::net::TcpListener;
 
 #[derive(Debug, Config)]

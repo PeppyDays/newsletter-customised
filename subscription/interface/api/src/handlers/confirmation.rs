@@ -1,10 +1,15 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use axum::extract::{Query, State};
+use axum::extract::{
+    Query,
+    State,
+};
 use axum::http::StatusCode;
-
-use domain::prelude::{SubscriberRepository, SubscriptionTokenRepository};
+use domain::prelude::{
+    SubscriberRepository,
+    SubscriptionTokenRepository,
+};
 
 use crate::error::ApiError;
 
@@ -60,12 +65,14 @@ pub async fn handle(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberRepository, MockSubscriptionTokenRepository, Subscriber, SubscriptionToken,
+        MockSubscriberRepository,
+        MockSubscriptionTokenRepository,
+        Subscriber,
+        SubscriptionToken,
     };
-    use fake::{
-        faker::{internet::en::SafeEmail, name::en::FirstName},
-        Fake,
-    };
+    use fake::faker::internet::en::SafeEmail;
+    use fake::faker::name::en::FirstName;
+    use fake::Fake;
     use uuid::Uuid;
 
     use super::*;

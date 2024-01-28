@@ -4,9 +4,8 @@ use anyhow::Context;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Form;
-use uuid::Uuid;
-
 use domain::prelude::*;
+use uuid::Uuid;
 
 use crate::error::ApiError;
 
@@ -124,10 +123,9 @@ async fn send_confirmation_email(
 
 #[cfg(test)]
 mod tests {
-    use fake::{
-        faker::{internet::en::SafeEmail, name::en::FirstName},
-        Fake,
-    };
+    use fake::faker::internet::en::SafeEmail;
+    use fake::faker::name::en::FirstName;
+    use fake::Fake;
 
     use super::*;
 
