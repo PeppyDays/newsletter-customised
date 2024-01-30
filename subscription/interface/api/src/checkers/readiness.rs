@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::runner::Container;
 
+// TODO: Is there a better way to handle dependencies liveness check?
 pub async fn handle(State(container): State<Container>) -> impl IntoResponse {
     // check subscriber repository
     let response = container
