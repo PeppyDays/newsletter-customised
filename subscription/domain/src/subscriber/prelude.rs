@@ -13,6 +13,10 @@ pub use crate::subscriber::model::{
     SubscriberName,
     SubscriberStatus,
 };
+pub use crate::subscriber::reader::{
+    SubscriberQuery,
+    SubscriberQueryReader,
+};
 pub use crate::subscriber::repository::{
     MockSubscriberRepository,
     SubscriberRepository,

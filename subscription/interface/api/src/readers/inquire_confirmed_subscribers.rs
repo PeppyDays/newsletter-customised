@@ -1,13 +1,13 @@
-use std::sync::Arc;
-
 use anyhow::Context;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
+
 use domain::prelude::{
     Subscriber,
+    SubscriberQuery,
+    SubscriberQueryReader,
     SubscriberRepository,
-    SubscriberStatus,
 };
 
 use crate::error::ApiError;
@@ -28,13 +28,17 @@ impl From<Subscriber> for Response {
     }
 }
 
-#[tracing::instrument(name = "Inquiring confirmed subscribers", skip(subscriber_repository))]
+#[tracing::instrument(
+    name = "Inquiring confirmed subscribers",
+    skip(subscriber_query_reader)
+)]
 pub async fn read(
-    State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
+    State(subscriber_query_reader): State<SubscriberQueryReader<impl SubscriberRepository>>,
 ) -> Result<Json<Vec<Response>>, ApiError> {
+    let inquire_confirmed_subscribers_query = SubscriberQuery::InquireConfirmedSubscribers;
     Ok(Json(
-        subscriber_repository
-            .find_by_status(SubscriberStatus::Confirmed)
+        subscriber_query_reader
+            .read(inquire_confirmed_subscribers_query)
             .await
             .context("Failed to get subscribers")
             .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?

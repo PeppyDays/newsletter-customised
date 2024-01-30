@@ -7,10 +7,18 @@ use std::net::{
 use std::sync::Arc;
 use std::time::Duration;
 
-use domain::prelude::SubscriberCommandExecutor;
 use fake::Fake;
-use messengers::prelude::SubscriberEmailMessenger;
 use once_cell::sync::Lazy;
+use sea_orm::ConnectionTrait;
+use secrecy::ExposeSecret;
+use tokio::net::TcpListener;
+use wiremock::MockServer;
+
+use domain::prelude::{
+    SubscriberCommandExecutor,
+    SubscriberQueryReader,
+};
+use messengers::prelude::SubscriberEmailMessenger;
 use repositories::prelude::{
     SubscriberSeaOrmRepository,
     SubscriptionTokenSeaOrmRepository,
@@ -19,10 +27,6 @@ use runner::{
     configuration,
     telemetry,
 };
-use sea_orm::ConnectionTrait;
-use secrecy::ExposeSecret;
-use tokio::net::TcpListener;
-use wiremock::MockServer;
 
 pub struct App {
     // application address
@@ -138,17 +142,18 @@ impl App {
             configuration.messenger.email.sender,
         );
 
-        // create subscriber command executor
+        // create subscriber command executor and query reader
         let subscriber_command_executor = SubscriberCommandExecutor::new(
             subscriber_repository.clone(),
             subscriber_messenger,
             configuration.application.exposing_address.url,
         );
+        let subscriber_query_reader = SubscriberQueryReader::new(subscriber_repository.clone());
 
         // create container for application context
         let container = api::runner::Container {
-            subscriber_repository: Arc::new(subscriber_repository.clone()),
             subscriber_command_executor,
+            subscriber_query_reader,
             subscription_token_repository: Arc::new(subscription_token_repository.clone()),
         };
 
