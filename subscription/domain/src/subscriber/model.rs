@@ -20,6 +20,7 @@ impl Subscriber {
         }
     }
 
+    // TODO: Remove this method
     pub fn register(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
         let name = SubscriberName::parse(name)?;
         let email = SubscriberEmail::parse(email)?;
@@ -100,19 +101,13 @@ impl AsRef<str> for SubscriberName {
 
 #[cfg(test)]
 mod tests {
-    use claims::{
-        assert_err,
-        assert_ok,
-    };
+    use claims::{assert_err, assert_ok};
     use fake::faker::internet::en::SafeEmail;
     use fake::Fake;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
-    use crate::subscriber::model::{
-        SubscriberEmail,
-        SubscriberName,
-    };
+    use crate::subscriber::model::{SubscriberEmail, SubscriberName};
 
     #[derive(Debug, Clone)]
     struct ValidEmailFixture(pub String);

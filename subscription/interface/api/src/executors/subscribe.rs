@@ -1,20 +1,14 @@
-use std::sync::Arc;
-
 use anyhow::Context;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Form;
-use domain::prelude::{
-    SubscriberCommand,
-    SubscriberCommandExecutor,
-    SubscriberError,
-    SubscriberMessenger,
-    SubscriberRepository,
-    SubscriptionToken,
-    SubscriptionTokenError,
-    SubscriptionTokenRepository,
-};
 use uuid::Uuid;
+
+use domain::prelude::{
+    SubscriberCommand, SubscriberCommandExecutor, SubscriberError, SubscriberMessenger,
+    SubscriberRepository, SubscriptionToken, SubscriptionTokenCommand,
+    SubscriptionTokenCommandExecutor, SubscriptionTokenRepository,
+};
 
 use crate::error::ApiError;
 
@@ -26,17 +20,18 @@ pub struct Request {
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(subscriber_command_executor, subscription_token_repository)
+    skip(subscriber_command_executor, subscription_token_command_executor)
 )]
 pub async fn execute(
     State(subscriber_command_executor): State<
         SubscriberCommandExecutor<impl SubscriberRepository, impl SubscriberMessenger>,
     >,
-    State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
+    State(subscription_token_command_executor): State<
+        SubscriptionTokenCommandExecutor<impl SubscriptionTokenRepository>,
+    >,
     Form(request): Form<Request>,
 ) -> Result<StatusCode, ApiError> {
     let subscriber_id = Uuid::new_v4();
-
     let register_subscriber_command = SubscriberCommand::RegisterSubscriber {
         id: subscriber_id,
         email: request.email,
@@ -58,15 +53,20 @@ pub async fn execute(
             }
         })?;
 
-    let subscription_token =
-        issue_subscription_token(subscriber_id, subscription_token_repository.clone())
-            .await
-            .context("Failed to issue a subscription token")
-            .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
+    let token = SubscriptionToken::generate_token().await;
+    let issue_subscription_token_command = SubscriptionTokenCommand::IssueSubscriptionToken {
+        token: token.clone(),
+        subscriber_id,
+    };
+    subscription_token_command_executor
+        .execute(issue_subscription_token_command)
+        .await
+        .context("Failed to issue a subscription token")
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
     let send_confirmation_message_command = SubscriberCommand::SendConfirmationMessage {
         id: subscriber_id,
-        token: subscription_token.token,
+        token,
     };
     subscriber_command_executor
         .execute(send_confirmation_message_command)
@@ -77,30 +77,11 @@ pub async fn execute(
     Ok(StatusCode::CREATED)
 }
 
-#[tracing::instrument(
-    name = "Adding a new subscriber - issue subscription token",
-    skip(subscription_token_repository)
-)]
-async fn issue_subscription_token(
-    subscriber_id: Uuid,
-    subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
-) -> Result<SubscriptionToken, SubscriptionTokenError> {
-    let subscription_token = SubscriptionToken::issue(subscriber_id);
-    subscription_token_repository
-        .save(&subscription_token)
-        .await?;
-    Ok(subscription_token)
-}
-
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberMessenger,
-        MockSubscriberRepository,
-        MockSubscriptionTokenRepository,
-        Subscriber,
-        SubscriberEmail,
-        SubscriberName,
+        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
+        Subscriber, SubscriberEmail, SubscriberName,
     };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
@@ -121,6 +102,8 @@ mod tests {
             subscriber_messenger,
             exposing_address,
         );
+        let subscription_token_command_executor =
+            SubscriptionTokenCommandExecutor::new(subscription_token_repository);
 
         // when
         let request = Request {
@@ -129,7 +112,7 @@ mod tests {
         };
         let response = execute(
             State(subscriber_command_executor),
-            State(Arc::new(subscription_token_repository)),
+            State(subscription_token_command_executor),
             Form(request),
         )
         .await;
@@ -157,6 +140,8 @@ mod tests {
             subscriber_messenger,
             exposing_address,
         );
+        let subscription_token_command_executor =
+            SubscriptionTokenCommandExecutor::new(subscription_token_repository);
 
         // when
         let request = Request {
@@ -165,7 +150,7 @@ mod tests {
         };
         let response = execute(
             State(subscriber_command_executor),
-            State(Arc::new(subscription_token_repository)),
+            State(subscription_token_command_executor),
             Form(request),
         )
         .await;
@@ -211,6 +196,8 @@ mod tests {
             subscriber_messenger,
             exposing_address,
         );
+        let subscription_token_command_executor =
+            SubscriptionTokenCommandExecutor::new(subscription_token_repository);
 
         // when
         let request = Request {
@@ -219,7 +206,7 @@ mod tests {
         };
         let response = execute(
             State(subscriber_command_executor),
-            State(Arc::new(subscription_token_repository)),
+            State(subscription_token_command_executor),
             Form(request),
         )
         .await;
