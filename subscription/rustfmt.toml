@@ -1,7 +1,7 @@
 unstable_features = true
 
 # optimize imports
-group_imports = "StdExternalCrate"
+# group_imports = "StdExternalCrate"
 imports_layout = "Vertical"
 imports_granularity = "Module"
 
