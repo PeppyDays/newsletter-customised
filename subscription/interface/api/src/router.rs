@@ -1,21 +1,19 @@
 use axum::extract::MatchedPath;
 use axum::http::Request;
-use axum::routing::{
-    get,
-    post,
-};
+use axum::routing::{get, post};
 use axum::Router;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
-use crate::runner::Container;
-use crate::{
-    checkers,
-    executors,
-    readers,
-};
+use domain::prelude::SubscriberRepository;
 
-pub async fn get_router(container: Container) -> Router {
+use crate::runner::Container;
+use crate::{checkers, executors, readers};
+
+pub async fn get_router<R>(container: Container<R>) -> Router
+where
+    R: SubscriberRepository + Clone + Send + Sync + 'static,
+{
     Router::new()
         .route(
             "/subscription/query/inquire-confirmed-subscribers/read",

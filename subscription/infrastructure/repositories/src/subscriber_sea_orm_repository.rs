@@ -1,9 +1,5 @@
 use domain::prelude::{
-    Subscriber,
-    SubscriberEmail,
-    SubscriberError,
-    SubscriberName,
-    SubscriberRepository,
+    Subscriber, SubscriberEmail, SubscriberError, SubscriberName, SubscriberRepository,
     SubscriberStatus,
 };
 use sea_orm::entity::prelude::*;
@@ -194,7 +190,7 @@ mod tests {
         let email = SafeEmail().fake();
         let name = FirstName().fake();
 
-        Subscriber::new(id, email, name).unwrap()
+        Subscriber::register(id, email, name).unwrap()
     }
 
     #[tokio::test]

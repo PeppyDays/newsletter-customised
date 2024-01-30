@@ -11,7 +11,16 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
-    pub fn new(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
+    pub fn new(id: Uuid, email: SubscriberEmail, name: SubscriberName) -> Self {
+        Self {
+            id,
+            email,
+            name,
+            status: SubscriberStatus::Unconfirmed,
+        }
+    }
+
+    pub fn register(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
         let name = SubscriberName::parse(name)?;
         let email = SubscriberEmail::parse(email)?;
 

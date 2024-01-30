@@ -1,8 +1,4 @@
-use domain::prelude::{
-    Subscriber,
-    SubscriberError,
-    SubscriberMessenger,
-};
+use domain::prelude::{Subscriber, SubscriberError, SubscriberMessenger};
 
 #[derive(Clone)]
 pub struct SubscriberEmailMessenger {
@@ -64,34 +60,15 @@ struct Request<'a> {
 
 #[cfg(test)]
 mod tests {
-    use claims::{
-        assert_err,
-        assert_ok,
-    };
-    use domain::prelude::{
-        Subscriber,
-        SubscriberMessenger,
-    };
+    use claims::{assert_err, assert_ok};
+    use domain::prelude::{Subscriber, SubscriberMessenger};
     use fake::faker::internet::en::SafeEmail;
-    use fake::faker::lorem::en::{
-        Paragraph,
-        Sentence,
-    };
+    use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::faker::name::en::FirstName;
     use fake::Fake;
     use uuid::Uuid;
-    use wiremock::matchers::{
-        any,
-        header,
-        header_exists,
-        method,
-        path,
-    };
-    use wiremock::{
-        Mock,
-        MockServer,
-        ResponseTemplate,
-    };
+    use wiremock::matchers::{any, header, header_exists, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     use crate::subscriber_email_messenger::SubscriberEmailMessenger;
 
@@ -140,7 +117,7 @@ mod tests {
         let (email_server, messenger) = run_email_server().await;
 
         let subscriber =
-            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+            Subscriber::register(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 
@@ -170,7 +147,7 @@ mod tests {
         let (email_server, messenger) = run_email_server().await;
 
         let subscriber =
-            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+            Subscriber::register(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 
@@ -193,7 +170,7 @@ mod tests {
         let (email_server, messenger) = run_email_server().await;
 
         let subscriber =
-            Subscriber::new(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+            Subscriber::register(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 

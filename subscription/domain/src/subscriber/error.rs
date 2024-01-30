@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 #[derive(thiserror::Error, Debug)]
 pub enum SubscriberError {
     #[error("Subscriber's name is invalid")]
@@ -5,6 +7,9 @@ pub enum SubscriberError {
 
     #[error("Subscriber's email is invalid")]
     InvalidSubscriberEmail,
+
+    #[error("Subscriber (ID: {0}) doesn't exist")]
+    SubscriberNotFound(Uuid),
 
     #[error("Failed to operate on repository")]
     RepositoryOperationFailed(#[source] anyhow::Error),
