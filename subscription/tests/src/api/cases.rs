@@ -1,13 +1,19 @@
-use fake::{
-    faker::{internet::en::SafeEmail, name::en::FirstName},
-    Fake,
+use domain::prelude::{
+    Subscriber,
+    SubscriberRepository,
+    SubscriptionTokenRepository,
+};
+use fake::faker::internet::en::SafeEmail;
+use fake::faker::name::en::FirstName;
+use fake::Fake;
+use wiremock::matchers::{
+    method,
+    path,
 };
 use wiremock::{
-    matchers::{method, path},
-    Mock, ResponseTemplate,
+    Mock,
+    ResponseTemplate,
 };
-
-use domain::prelude::{Subscriber, SubscriberRepository, SubscriptionTokenRepository};
 
 use crate::api::app::App;
 

@@ -12,9 +12,11 @@ use tracing_subscriber::{
     Registry,
 };
 
+use crate::configuration::LoggingConfiguration;
+
 pub fn get_subscriber<Sink>(
     name: &str,
-    env_filter: &str,
+    filter: LoggingConfiguration,
     sink: Sink,
 ) -> impl Subscriber + Send + Sync
 where
@@ -23,8 +25,13 @@ where
     // try_from_default_env() will read the RUST_LOG environment variable
     // and use it to set the log level filter.
     // If it is not set, then use env_filter argument.
-    let env_filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(env_filter));
+    let mut env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(filter.global));
+
+    for (crate_name, logging_level) in filter.crates {
+        env_filter =
+            env_filter.add_directive(format!("{}={}", crate_name, logging_level).parse().unwrap());
+    }
 
     // configure log format with the application name and target logging output (e.g. std::io::stdout)
     let formatting_layer = BunyanFormattingLayer::new(name.to_string(), sink);

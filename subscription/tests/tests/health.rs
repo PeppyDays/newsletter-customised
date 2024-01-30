@@ -1,5 +1,4 @@
 use reqwest::StatusCode;
-
 use tests::api::app::App;
 
 #[tokio::test]

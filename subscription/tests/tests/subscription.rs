@@ -1,13 +1,20 @@
+use domain::prelude::{
+    SubscriberRepository,
+    SubscriberStatus,
+};
 use fake::faker::internet::en::SafeEmail;
 use fake::faker::name::en::FirstName;
 use fake::Fake;
 use reqwest::StatusCode;
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, ResponseTemplate};
-
-use domain::prelude::{SubscriberRepository, SubscriberStatus};
-
 use tests::api::app::App;
+use wiremock::matchers::{
+    method,
+    path,
+};
+use wiremock::{
+    Mock,
+    ResponseTemplate,
+};
 
 #[tokio::test]
 async fn subscription_with_valid_form_returns_201() {

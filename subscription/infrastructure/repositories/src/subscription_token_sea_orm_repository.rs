@@ -1,4 +1,8 @@
-use domain::prelude::{SubscriptionToken, SubscriptionTokenError, SubscriptionTokenRepository};
+use domain::prelude::{
+    SubscriptionToken,
+    SubscriptionTokenError,
+    SubscriptionTokenRepository,
+};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use uuid::Uuid;

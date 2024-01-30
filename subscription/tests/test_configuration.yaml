@@ -28,4 +28,4 @@ messenger:
     request_timeout: 1 # seconds
 
 logging:
-  level: info
+  global: info

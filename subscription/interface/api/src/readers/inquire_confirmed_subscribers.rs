@@ -1,9 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use axum::{extract::State, http::StatusCode, Json};
-
-use domain::prelude::{Subscriber, SubscriberRepository, SubscriberStatus};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::Json;
+use domain::prelude::{
+    Subscriber,
+    SubscriberRepository,
+    SubscriberStatus,
+};
 
 use crate::error::ApiError;
 

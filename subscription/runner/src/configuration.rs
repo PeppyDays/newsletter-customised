@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use confique::Config;
 use secrecy::{
     ExposeSecret,
@@ -5,7 +7,7 @@ use secrecy::{
 };
 use tokio::net::TcpListener;
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct Configuration {
     #[config(nested)]
     pub application: ApplicationConfiguration,
@@ -20,7 +22,7 @@ pub struct Configuration {
     pub logging: LoggingConfiguration,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct ApplicationConfiguration {
     #[config(nested)]
     pub listening_address: ApplicationListeningAddress,
@@ -29,7 +31,7 @@ pub struct ApplicationConfiguration {
     pub exposing_address: ApplicationExposingAddress,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct ApplicationListeningAddress {
     #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_HOST")]
     pub host: String,
@@ -38,13 +40,13 @@ pub struct ApplicationListeningAddress {
     pub port: u16,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct ApplicationExposingAddress {
     #[config(env = "APP_APPLICATION_EXPOSING_ADDRESS_URL")]
     pub url: String,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct DatabaseConfiguration {
     #[config(nested)]
     pub source: DatabaseSource,
@@ -53,7 +55,7 @@ pub struct DatabaseConfiguration {
     pub pool_options: DatabasePoolOptions,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct DatabaseSource {
     #[config(env = "APP_DATABASE_SOURCE_HOST")]
     pub host: String,
@@ -71,7 +73,7 @@ pub struct DatabaseSource {
     pub database: String,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct DatabasePoolOptions {
     pub min_connections: u32,
     pub max_connections: u32,
@@ -97,7 +99,7 @@ impl DatabaseConfiguration {
     }
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct MessengerConfiguration {
     #[config(nested)]
     pub email: EmailService,
@@ -106,23 +108,24 @@ pub struct MessengerConfiguration {
     pub pool_options: EmailClientPoolOptions,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct EmailService {
     pub url: String,
     pub api_key: Secret<String>,
     pub sender: String,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct EmailClientPoolOptions {
     pub connection_timeout: u64,
     pub request_timeout: u64,
 }
 
-#[derive(Debug, Config)]
+#[derive(Debug, Config, Clone)]
 pub struct LoggingConfiguration {
     #[config(env = "APP_LOGGING_LEVEL")]
-    pub level: String,
+    pub global: String,
+    pub crates: HashMap<String, String>,
 }
 
 pub async fn get_configuration(file: &str) -> Configuration {

@@ -5,10 +5,7 @@ use secrecy::ExposeSecret;
 
 use crate::configuration;
 
-pub async fn run() {
-    // read configuration
-    let configuration = configuration::get_configuration("configuration.yaml").await;
-
+pub async fn run(configuration: configuration::Configuration) {
     // configure application listener
     let listener = configuration::bind_listener(&configuration).await;
 

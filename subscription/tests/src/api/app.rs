@@ -1,19 +1,27 @@
-use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    sync::Arc,
-    time::Duration,
+use std::collections::HashMap;
+use std::net::{
+    Ipv4Addr,
+    SocketAddr,
+    SocketAddrV4,
 };
+use std::sync::Arc;
+use std::time::Duration;
 
 use fake::Fake;
+use messengers::prelude::SubscriberEmailMessenger;
 use once_cell::sync::Lazy;
+use repositories::prelude::{
+    SubscriberSeaOrmRepository,
+    SubscriptionTokenSeaOrmRepository,
+};
+use runner::{
+    configuration,
+    telemetry,
+};
 use sea_orm::ConnectionTrait;
 use secrecy::ExposeSecret;
 use tokio::net::TcpListener;
 use wiremock::MockServer;
-
-use messengers::prelude::SubscriberEmailMessenger;
-use repositories::prelude::{SubscriberSeaOrmRepository, SubscriptionTokenSeaOrmRepository};
-use runner::{configuration, telemetry};
 
 pub struct App {
     // application address
@@ -29,18 +37,20 @@ pub struct App {
 }
 
 static TRACING: Lazy<()> = Lazy::new(|| {
-    let default_filter_level = "info";
-    let subscriber_name = "newsletter-test";
+    let default_filter = configuration::LoggingConfiguration {
+        global: "info".to_string(),
+        crates: HashMap::new(),
+    };
+    let subscriber_name = "newsletter";
 
     // if TEST_LOG environment variable is set, then log to stdout
     // otherwise, log to sink, which is a blackhole
     if std::env::var("TEST_LOG").is_ok() {
         let subscriber =
-            telemetry::get_subscriber(subscriber_name, default_filter_level, std::io::stdout);
+            telemetry::get_subscriber(subscriber_name, default_filter, std::io::stdout);
         telemetry::initialize_subscriber(subscriber);
     } else {
-        let subscriber =
-            telemetry::get_subscriber(subscriber_name, default_filter_level, std::io::sink);
+        let subscriber = telemetry::get_subscriber(subscriber_name, default_filter, std::io::sink);
         telemetry::initialize_subscriber(subscriber);
     };
 });
