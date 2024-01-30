@@ -15,6 +15,8 @@ pub enum SubscriberCommand {
         email: String,
         name: String,
     },
+    // TODO: This is not actually command because it doesn't change the state of the system
+    // Might need to implement a new BC (e.g. Notification) to handle this properly
     SendConfirmationMessage {
         id: Uuid,
         token: String,
