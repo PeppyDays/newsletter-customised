@@ -21,7 +21,6 @@ where
     pub subscriber_repository: Arc<dyn SubscriberRepository>,
     pub subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
     pub subscriber_command_executor: SubscriberCommandExecutor<R, M>,
-    pub subscriber_messenger: Arc<dyn SubscriberMessenger>,
 }
 
 impl<R, M> FromRef<Container<R, M>> for Arc<dyn SubscriberRepository>
@@ -31,16 +30,6 @@ where
 {
     fn from_ref(container: &Container<R, M>) -> Self {
         container.subscriber_repository.clone()
-    }
-}
-
-impl<R, M> FromRef<Container<R, M>> for Arc<dyn SubscriberMessenger>
-where
-    R: SubscriberRepository + Clone + Send + Sync + 'static,
-    M: SubscriberMessenger + Clone + Send + Sync + 'static,
-{
-    fn from_ref(container: &Container<R, M>) -> Self {
-        container.subscriber_messenger.clone()
     }
 }
 

@@ -78,7 +78,6 @@ pub async fn run(configuration: configuration::Configuration) {
             subscriber_messenger.clone(),
             configuration.application.exposing_address.url,
         ),
-        subscriber_messenger: Arc::new(subscriber_messenger),
     };
 
     // run the application api
