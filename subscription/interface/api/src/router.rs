@@ -5,7 +5,10 @@ use axum::routing::{
     post,
 };
 use axum::Router;
-use domain::prelude::SubscriberRepository;
+use domain::prelude::{
+    SubscriberMessenger,
+    SubscriberRepository,
+};
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
@@ -16,9 +19,10 @@ use crate::{
     readers,
 };
 
-pub async fn get_router<R>(container: Container<R>) -> Router
+pub async fn get_router<R, M>(container: Container<R, M>) -> Router
 where
     R: SubscriberRepository + Clone + Send + Sync + 'static,
+    M: SubscriberMessenger + Clone + Send + Sync + 'static,
 {
     Router::new()
         .route(

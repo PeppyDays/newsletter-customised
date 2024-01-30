@@ -139,8 +139,11 @@ impl App {
         );
 
         // create subscriber command executor
-        let subscriber_command_executor =
-            SubscriberCommandExecutor::new(subscriber_repository.clone());
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository.clone(),
+            subscriber_messenger.clone(),
+            configuration.application.exposing_address.url,
+        );
 
         // create container for application context
         let container = api::runner::Container {
@@ -148,7 +151,6 @@ impl App {
             subscriber_messenger: Arc::new(subscriber_messenger.clone()),
             subscriber_command_executor,
             subscription_token_repository: Arc::new(subscription_token_repository.clone()),
-            exposing_address: Arc::new(configuration.application.exposing_address.url.clone()),
         };
 
         // create http client for accessing application APIs

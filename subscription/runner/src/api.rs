@@ -73,9 +73,12 @@ pub async fn run(configuration: configuration::Configuration) {
     let container = api::runner::Container {
         subscriber_repository: Arc::new(subscriber_repository.clone()),
         subscription_token_repository: Arc::new(subscription_token_repository),
-        subscriber_command_executor: SubscriberCommandExecutor::new(subscriber_repository.clone()),
+        subscriber_command_executor: SubscriberCommandExecutor::new(
+            subscriber_repository.clone(),
+            subscriber_messenger.clone(),
+            configuration.application.exposing_address.url,
+        ),
         subscriber_messenger: Arc::new(subscriber_messenger),
-        exposing_address: Arc::new(configuration.application.exposing_address.url),
     };
 
     // run the application api

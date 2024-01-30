@@ -1,15 +1,19 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use domain::prelude::SubscriberRepository;
+use domain::prelude::{
+    SubscriberMessenger,
+    SubscriberRepository,
+};
 use uuid::Uuid;
 
 use crate::runner::Container;
 
 // TODO: Is there a better way to handle dependencies liveness check?
-pub async fn handle<R>(State(container): State<Container<R>>) -> impl IntoResponse
+pub async fn handle<R, M>(State(container): State<Container<R, M>>) -> impl IntoResponse
 where
-    R: SubscriberRepository + Clone + Send + Sync,
+    R: SubscriberRepository + Clone + Send + Sync + 'static,
+    M: SubscriberMessenger + Clone + Send + Sync + 'static,
 {
     // check subscriber repository
     let response = container

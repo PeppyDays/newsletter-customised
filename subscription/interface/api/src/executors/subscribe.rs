@@ -26,20 +26,13 @@ pub struct Request {
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(
-        subscriber_repository,
-        subscriber_messenger,
-        subscriber_command_executor,
-        subscription_token_repository,
-        exposing_address,
-    )
+    skip(subscriber_command_executor, subscription_token_repository)
 )]
 pub async fn execute(
-    State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
-    State(subscriber_messenger): State<Arc<dyn SubscriberMessenger>>,
-    State(subscriber_command_executor): State<SubscriberCommandExecutor<impl SubscriberRepository>>,
+    State(subscriber_command_executor): State<
+        SubscriberCommandExecutor<impl SubscriberRepository, impl SubscriberMessenger>,
+    >,
     State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
-    State(exposing_address): State<Arc<String>>,
     Form(request): Form<Request>,
 ) -> Result<StatusCode, ApiError> {
     let subscriber_id = Uuid::new_v4();
@@ -71,16 +64,15 @@ pub async fn execute(
             .context("Failed to issue a subscription token")
             .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
-    send_confirmation_email(
-        subscriber_id,
-        &subscription_token,
-        &exposing_address,
-        subscriber_repository.clone(),
-        subscriber_messenger.clone(),
-    )
-    .await
-    .context("Failed to send a confirmation email")
-    .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
+    let send_confirmation_message_command = SubscriberCommand::SendConfirmationMessage {
+        id: subscriber_id,
+        token: subscription_token.token,
+    };
+    subscriber_command_executor
+        .execute(send_confirmation_message_command)
+        .await
+        .context("Failed to send a confirmation email")
+        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
     Ok(StatusCode::CREATED)
 }
@@ -98,44 +90,6 @@ async fn issue_subscription_token(
         .save(&subscription_token)
         .await?;
     Ok(subscription_token)
-}
-
-#[tracing::instrument(
-    name = "Adding a new subscriber - send confirmation email",
-    skip(
-        subscription_token,
-        exposing_url,
-        subscriber_repository,
-        subscriber_messenger
-    )
-)]
-async fn send_confirmation_email(
-    subscriber_id: Uuid,
-    subscription_token: &SubscriptionToken,
-    exposing_url: &str,
-    subscriber_repository: Arc<dyn SubscriberRepository>,
-    subscriber_messenger: Arc<dyn SubscriberMessenger>,
-) -> Result<(), SubscriberError> {
-    let subscription_confirmation_url = format!(
-        "{}/subscriptions/confirm?token={}",
-        exposing_url, subscription_token.token,
-    );
-    let subscriber = subscriber_repository
-        .find_by_id(subscriber_id)
-        .await?
-        .ok_or(SubscriberError::SubscriberNotFound(subscriber_id))?;
-
-    subscriber_messenger
-        .send(
-            &subscriber,
-            "Welcome to our newsletter!",
-            &format!(
-                r#"Welcome to our newsletter! Click <a href="{}">here</a> to confirm your subscription."#,
-                subscription_confirmation_url,
-            ),
-        ).await?;
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -159,10 +113,14 @@ mod tests {
         // given
         let subscriber_repository = MockSubscriberRepository::new();
         let subscriber_messenger = MockSubscriberMessenger::new();
-        let subscriber_command_executor =
-            SubscriberCommandExecutor::new(MockSubscriberRepository::new());
-        let subscription_token_repository = MockSubscriptionTokenRepository::new();
         let exposing_address = "http://localhost:3000".to_string();
+        let subscription_token_repository = MockSubscriptionTokenRepository::new();
+
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository,
+            subscriber_messenger,
+            exposing_address,
+        );
 
         // when
         let request = Request {
@@ -170,11 +128,8 @@ mod tests {
             name: FirstName().fake(),
         };
         let response = execute(
-            State(Arc::new(subscriber_repository)),
-            State(Arc::new(subscriber_messenger)),
             State(subscriber_command_executor),
             State(Arc::new(subscription_token_repository)),
-            State(Arc::new(exposing_address)),
             Form(request),
         )
         .await;
@@ -187,19 +142,21 @@ mod tests {
     #[tokio::test]
     async fn subscription_with_duplicate_email_returns_bad_request() {
         // given
-        let subscriber_repository = MockSubscriberRepository::new();
+        let mut subscriber_repository = MockSubscriberRepository::new();
         let subscriber_messenger = MockSubscriberMessenger::new();
         let subscription_token_repository = MockSubscriptionTokenRepository::new();
         let exposing_address = "http://localhost:3000".to_string();
 
-        let mut subscriber_command_executor_repository = MockSubscriberRepository::new();
-        subscriber_command_executor_repository
+        subscriber_repository
             .expect_save()
             .once()
             .returning(|_| Err(SubscriberError::InvalidSubscriberEmail));
 
-        let subscriber_command_executor =
-            SubscriberCommandExecutor::new(subscriber_command_executor_repository);
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository,
+            subscriber_messenger,
+            exposing_address,
+        );
 
         // when
         let request = Request {
@@ -207,11 +164,8 @@ mod tests {
             name: FirstName().fake(),
         };
         let response = execute(
-            State(Arc::new(subscriber_repository)),
-            State(Arc::new(subscriber_messenger)),
             State(subscriber_command_executor),
             State(Arc::new(subscription_token_repository)),
-            State(Arc::new(exposing_address)),
             Form(request),
         )
         .await;
@@ -229,15 +183,10 @@ mod tests {
         let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
         let exposing_address = "http://localhost:3000".to_string();
 
-        let mut subscriber_command_executor_repository = MockSubscriberRepository::new();
-        subscriber_command_executor_repository
+        subscriber_repository
             .expect_save()
             .once()
             .returning(|_| Ok(()));
-
-        let subscriber_command_executor =
-            SubscriberCommandExecutor::new(subscriber_command_executor_repository);
-
         subscriber_repository
             .expect_find_by_id()
             .once()
@@ -248,14 +197,20 @@ mod tests {
                     SubscriberName::parse(FirstName().fake()).unwrap(),
                 )))
             });
-        subscription_token_repository
-            .expect_save()
-            .once()
-            .returning(|_| Ok(()));
         subscriber_messenger
             .expect_send()
             .once()
             .returning(|_, _, _| Ok(()));
+        subscription_token_repository
+            .expect_save()
+            .once()
+            .returning(|_| Ok(()));
+
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository,
+            subscriber_messenger,
+            exposing_address,
+        );
 
         // when
         let request = Request {
@@ -263,11 +218,8 @@ mod tests {
             name: FirstName().fake(),
         };
         let response = execute(
-            State(Arc::new(subscriber_repository)),
-            State(Arc::new(subscriber_messenger)),
             State(subscriber_command_executor),
             State(Arc::new(subscription_token_repository)),
-            State(Arc::new(exposing_address)),
             Form(request),
         )
         .await;
