@@ -1,5 +1,9 @@
 use domain::prelude::{
-    Subscriber, SubscriberEmail, SubscriberError, SubscriberName, SubscriberRepository,
+    Subscriber,
+    SubscriberEmail,
+    SubscriberError,
+    SubscriberName,
+    SubscriberRepository,
     SubscriberStatus,
 };
 use sea_orm::entity::prelude::*;

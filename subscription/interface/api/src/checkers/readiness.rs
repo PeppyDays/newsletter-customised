@@ -1,9 +1,8 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use uuid::Uuid;
-
 use domain::prelude::SubscriberRepository;
+use uuid::Uuid;
 
 use crate::runner::Container;
 

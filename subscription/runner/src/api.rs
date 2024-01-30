@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use domain::prelude::SubscriberCommandExecutor;
 use secrecy::ExposeSecret;
 
 use crate::configuration;
@@ -70,8 +71,9 @@ pub async fn run(configuration: configuration::Configuration) {
 
     // configure container which of the application context
     let container = api::runner::Container {
-        subscriber_repository: Arc::new(subscriber_repository),
+        subscriber_repository: Arc::new(subscriber_repository.clone()),
         subscription_token_repository: Arc::new(subscription_token_repository),
+        subscriber_command_executor: SubscriberCommandExecutor::new(subscriber_repository.clone()),
         subscriber_messenger: Arc::new(subscriber_messenger),
         exposing_address: Arc::new(configuration.application.exposing_address.url),
     };

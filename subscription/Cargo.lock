@@ -2231,6 +2231,7 @@ dependencies = [
  "anyhow",
  "api",
  "confique",
+ "domain",
  "messengers",
  "repositories",
  "secrecy",

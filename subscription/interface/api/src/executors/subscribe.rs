@@ -5,8 +5,14 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Form;
 use domain::prelude::{
-    SubscriberCommand, SubscriberCommandExecutor, SubscriberError, SubscriberMessenger,
-    SubscriberRepository, SubscriptionToken, SubscriptionTokenError, SubscriptionTokenRepository,
+    SubscriberCommand,
+    SubscriberCommandExecutor,
+    SubscriberError,
+    SubscriberMessenger,
+    SubscriberRepository,
+    SubscriptionToken,
+    SubscriptionTokenError,
+    SubscriptionTokenRepository,
 };
 use uuid::Uuid;
 
@@ -79,20 +85,6 @@ pub async fn execute(
     Ok(StatusCode::CREATED)
 }
 
-// #[tracing::instrument(
-//     name = "Adding a new subscriber - register subscriber",
-//     skip(id, request, subscriber_repository)
-// )]
-// async fn register_subscriber(
-//     id: Uuid,
-//     request: Request,
-//     subscriber_repository: Arc<dyn SubscriberRepository>,
-// ) -> Result<Subscriber, SubscriberError> {
-//     let subscriber = Subscriber::new(id, request.email, request.name)?;
-//     subscriber_repository.save(&subscriber).await?;
-//     Ok(subscriber)
-// }
-
 #[tracing::instrument(
     name = "Adding a new subscriber - issue subscription token",
     skip(subscription_token_repository)
@@ -149,7 +141,12 @@ async fn send_confirmation_email(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
+        MockSubscriberMessenger,
+        MockSubscriberRepository,
+        MockSubscriptionTokenRepository,
+        Subscriber,
+        SubscriberEmail,
+        SubscriberName,
     };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
@@ -163,7 +160,7 @@ mod tests {
         let subscriber_repository = MockSubscriberRepository::new();
         let subscriber_messenger = MockSubscriberMessenger::new();
         let subscriber_command_executor =
-            SubscriberCommandExecutor::new(subscriber_repository.clone());
+            SubscriberCommandExecutor::new(MockSubscriberRepository::new());
         let subscription_token_repository = MockSubscriptionTokenRepository::new();
         let exposing_address = "http://localhost:3000".to_string();
 
@@ -190,16 +187,19 @@ mod tests {
     #[tokio::test]
     async fn subscription_with_duplicate_email_returns_bad_request() {
         // given
-        let mut subscriber_repository = MockSubscriberRepository::new();
+        let subscriber_repository = MockSubscriberRepository::new();
         let subscriber_messenger = MockSubscriberMessenger::new();
-        let subscriber_command_executor = SubscriberCommandExecutor::new(subscriber_repository);
         let subscription_token_repository = MockSubscriptionTokenRepository::new();
         let exposing_address = "http://localhost:3000".to_string();
 
-        subscriber_repository
+        let mut subscriber_command_executor_repository = MockSubscriberRepository::new();
+        subscriber_command_executor_repository
             .expect_save()
             .once()
             .returning(|_| Err(SubscriberError::InvalidSubscriberEmail));
+
+        let subscriber_command_executor =
+            SubscriberCommandExecutor::new(subscriber_command_executor_repository);
 
         // when
         let request = Request {
@@ -226,14 +226,28 @@ mod tests {
         // given
         let mut subscriber_repository = MockSubscriberRepository::new();
         let mut subscriber_messenger = MockSubscriberMessenger::new();
-        let subscriber_command_executor = SubscriberCommandExecutor::new(subscriber_repository);
         let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
         let exposing_address = "http://localhost:3000".to_string();
 
-        subscriber_repository
+        let mut subscriber_command_executor_repository = MockSubscriberRepository::new();
+        subscriber_command_executor_repository
             .expect_save()
             .once()
             .returning(|_| Ok(()));
+
+        let subscriber_command_executor =
+            SubscriberCommandExecutor::new(subscriber_command_executor_repository);
+
+        subscriber_repository
+            .expect_find_by_id()
+            .once()
+            .returning(|id| {
+                Ok(Some(Subscriber::new(
+                    id,
+                    SubscriberEmail::parse(SafeEmail().fake()).unwrap(),
+                    SubscriberName::parse(FirstName().fake()).unwrap(),
+                )))
+            });
         subscription_token_repository
             .expect_save()
             .once()

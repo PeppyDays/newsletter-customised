@@ -1,4 +1,8 @@
-use domain::prelude::{Subscriber, SubscriberError, SubscriberMessenger};
+use domain::prelude::{
+    Subscriber,
+    SubscriberError,
+    SubscriberMessenger,
+};
 
 #[derive(Clone)]
 pub struct SubscriberEmailMessenger {
@@ -60,15 +64,34 @@ struct Request<'a> {
 
 #[cfg(test)]
 mod tests {
-    use claims::{assert_err, assert_ok};
-    use domain::prelude::{Subscriber, SubscriberMessenger};
+    use claims::{
+        assert_err,
+        assert_ok,
+    };
+    use domain::prelude::{
+        Subscriber,
+        SubscriberMessenger,
+    };
     use fake::faker::internet::en::SafeEmail;
-    use fake::faker::lorem::en::{Paragraph, Sentence};
+    use fake::faker::lorem::en::{
+        Paragraph,
+        Sentence,
+    };
     use fake::faker::name::en::FirstName;
     use fake::Fake;
     use uuid::Uuid;
-    use wiremock::matchers::{any, header, header_exists, method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use wiremock::matchers::{
+        any,
+        header,
+        header_exists,
+        method,
+        path,
+    };
+    use wiremock::{
+        Mock,
+        MockServer,
+        ResponseTemplate,
+    };
 
     use crate::subscriber_email_messenger::SubscriberEmailMessenger;
 

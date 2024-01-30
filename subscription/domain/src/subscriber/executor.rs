@@ -1,7 +1,11 @@
 use uuid::Uuid;
 
 use crate::subscriber::error::SubscriberError;
-use crate::subscriber::model::{Subscriber, SubscriberEmail, SubscriberName};
+use crate::subscriber::model::{
+    Subscriber,
+    SubscriberEmail,
+    SubscriberName,
+};
 use crate::subscriber::repository::SubscriberRepository;
 
 pub enum SubscriberCommand {

@@ -7,6 +7,7 @@ use std::net::{
 use std::sync::Arc;
 use std::time::Duration;
 
+use domain::prelude::SubscriberCommandExecutor;
 use fake::Fake;
 use messengers::prelude::SubscriberEmailMessenger;
 use once_cell::sync::Lazy;
@@ -39,7 +40,7 @@ pub struct App {
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter = configuration::LoggingConfiguration {
         global: "info".to_string(),
-        crates: HashMap::new(),
+        crates: Some(HashMap::new()),
     };
     let subscriber_name = "newsletter";
 
@@ -137,11 +138,16 @@ impl App {
             configuration.messenger.email.sender,
         );
 
+        // create subscriber command executor
+        let subscriber_command_executor =
+            SubscriberCommandExecutor::new(subscriber_repository.clone());
+
         // create container for application context
         let container = api::runner::Container {
             subscriber_repository: Arc::new(subscriber_repository.clone()),
-            subscription_token_repository: Arc::new(subscription_token_repository.clone()),
             subscriber_messenger: Arc::new(subscriber_messenger.clone()),
+            subscriber_command_executor,
+            subscription_token_repository: Arc::new(subscription_token_repository.clone()),
             exposing_address: Arc::new(configuration.application.exposing_address.url.clone()),
         };
 

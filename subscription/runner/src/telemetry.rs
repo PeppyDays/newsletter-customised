@@ -28,9 +28,11 @@ where
     let mut env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(filter.global));
 
-    for (crate_name, logging_level) in filter.crates {
-        env_filter =
-            env_filter.add_directive(format!("{}={}", crate_name, logging_level).parse().unwrap());
+    if let Some(crates) = filter.crates {
+        for (crate_name, logging_level) in crates {
+            env_filter = env_filter
+                .add_directive(format!("{}={}", crate_name, logging_level).parse().unwrap());
+        }
     }
 
     // configure log format with the application name and target logging output (e.g. std::io::stdout)

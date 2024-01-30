@@ -125,7 +125,7 @@ pub struct EmailClientPoolOptions {
 pub struct LoggingConfiguration {
     #[config(env = "APP_LOGGING_LEVEL")]
     pub global: String,
-    pub crates: HashMap<String, String>,
+    pub crates: Option<HashMap<String, String>>,
 }
 
 pub async fn get_configuration(file: &str) -> Configuration {

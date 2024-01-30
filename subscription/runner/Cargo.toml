@@ -12,6 +12,7 @@ name = "app"
 
 [dependencies]
 api = { path = "../interface/api" }
+domain = { path = "../domain" }
 repositories = { path = "../infrastructure/repositories" }
 messengers = { path = "../infrastructure/messengers" }
 

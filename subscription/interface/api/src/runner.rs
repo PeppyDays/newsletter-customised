@@ -2,13 +2,16 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 use domain::prelude::{
-    SubscriberCommandExecutor, SubscriberMessenger, SubscriberRepository,
+    SubscriberCommandExecutor,
+    SubscriberMessenger,
+    SubscriberRepository,
     SubscriptionTokenRepository,
 };
 use tokio::net::TcpListener;
 
 use crate::router;
 
+// TODO: Add a new method
 #[derive(Clone)]
 pub struct Container<R>
 where
