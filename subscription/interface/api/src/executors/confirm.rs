@@ -7,6 +7,10 @@ use axum::extract::{
 };
 use axum::http::StatusCode;
 use domain::prelude::{
+    SubscriberCommand,
+    SubscriberCommandExecutor,
+    SubscriberError,
+    SubscriberMessenger,
     SubscriberRepository,
     SubscriptionTokenRepository,
 };
@@ -20,10 +24,12 @@ pub struct Request {
 
 #[tracing::instrument(
     name = "Confirming a subscription",
-    skip(subscriber_repository, subscription_token_repository)
+    skip(subscriber_command_executor, subscription_token_repository)
 )]
 pub async fn execute(
-    State(subscriber_repository): State<Arc<dyn SubscriberRepository>>,
+    State(subscriber_command_executor): State<
+        SubscriberCommandExecutor<impl SubscriberRepository, impl SubscriberMessenger>,
+    >,
     State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
     Query(request): Query<Request>,
 ) -> Result<StatusCode, ApiError> {
@@ -32,32 +38,23 @@ pub async fn execute(
         .await
         .context("Failed to get subscription token")
         .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?
-        .ok_or_else(|| {
-            ApiError::new(
-                StatusCode::NOT_FOUND,
-                anyhow::anyhow!("No subscription token found for the given subscription token"),
-            )
-        })?;
+        .ok_or(ApiError::new(
+            StatusCode::NOT_FOUND,
+            anyhow::anyhow!("No subscription token found for the given subscription token"),
+        ))?;
+
     let subscriber_id = subscription_token.subscriber_id;
-
-    let mut subscriber = subscriber_repository
-        .find_by_id(subscriber_id)
+    let confirm_subscription_command = SubscriberCommand::ConfirmSubscription { id: subscriber_id };
+    subscriber_command_executor
+        .execute(confirm_subscription_command)
         .await
-        .context("Failed to get subscriber")
-        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?
-        .ok_or_else(|| {
-            ApiError::new(
+        .map_err(|error| match error {
+            SubscriberError::SubscriberNotFound(_) => ApiError::new(
                 StatusCode::NOT_FOUND,
-                anyhow::anyhow!("No subscriber found from the given subscription token"),
-            )
+                anyhow::anyhow!("No subscriber found for the given subscription token"),
+            ),
+            _ => ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error.into()),
         })?;
-    subscriber.confirm();
-
-    subscriber_repository
-        .save(&subscriber)
-        .await
-        .context("Failed to make the subscriber confirmed")
-        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?;
 
     Ok(StatusCode::OK)
 }
@@ -65,6 +62,7 @@ pub async fn execute(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
+        MockSubscriberMessenger,
         MockSubscriberRepository,
         MockSubscriptionTokenRepository,
         Subscriber,
@@ -81,19 +79,27 @@ mod tests {
     async fn confirmation_with_not_existing_token_returns_not_found() {
         // given
         let subscriber_repository = MockSubscriberRepository::new();
+        let subscriber_messenger = MockSubscriberMessenger::new();
         let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
+        let exposing_address = "http://localhost:3000".to_string();
 
         subscription_token_repository
             .expect_find_by_token()
             .once()
             .returning(|_| Ok(Option::None));
 
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository,
+            subscriber_messenger,
+            exposing_address,
+        );
+
         // when
         let request = Request {
             token: "not-existing-token".to_string(),
         };
         let response = execute(
-            State(Arc::new(subscriber_repository)),
+            State(subscriber_command_executor),
             State(Arc::new(subscription_token_repository)),
             Query(request),
         )
@@ -108,24 +114,31 @@ mod tests {
     async fn confirmation_with_existing_token_without_subscriber_returns_not_found() {
         // given
         let mut subscriber_repository = MockSubscriberRepository::new();
+        let subscriber_messenger = MockSubscriberMessenger::new();
         let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
-
-        subscription_token_repository
-            .expect_find_by_token()
-            .once()
-            .returning(|_| Ok(Option::Some(SubscriptionToken::issue(Uuid::new_v4()))));
+        let exposing_address = "http://localhost:3000".to_string();
 
         subscriber_repository
             .expect_find_by_id()
             .once()
             .returning(|_| Ok(Option::None));
+        subscription_token_repository
+            .expect_find_by_token()
+            .once()
+            .returning(|_| Ok(Option::Some(SubscriptionToken::issue(Uuid::new_v4()))));
+
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository,
+            subscriber_messenger,
+            exposing_address,
+        );
 
         // when
         let request = Request {
             token: "existing-token".to_string(),
         };
         let response = execute(
-            State(Arc::new(subscriber_repository)),
+            State(subscriber_command_executor),
             State(Arc::new(subscription_token_repository)),
             Query(request),
         )
@@ -140,14 +153,10 @@ mod tests {
     async fn confirmation_with_existing_token_and_subscriber_returns_ok() {
         // given
         let mut subscriber_repository = MockSubscriberRepository::new();
+        let subscriber_messenger = MockSubscriberMessenger::new();
         let mut subscription_token_repository = MockSubscriptionTokenRepository::new();
-
+        let exposing_address = "http://localhost:3000".to_string();
         let subscriber_id = Uuid::new_v4();
-
-        subscription_token_repository
-            .expect_find_by_token()
-            .once()
-            .returning(move |_| Ok(Option::Some(SubscriptionToken::issue(subscriber_id))));
 
         subscriber_repository
             .expect_find_by_id()
@@ -158,18 +167,27 @@ mod tests {
                         .unwrap(),
                 ))
             });
-
         subscriber_repository
             .expect_save()
             .once()
             .returning(|_| Ok(()));
+        subscription_token_repository
+            .expect_find_by_token()
+            .once()
+            .returning(move |_| Ok(Option::Some(SubscriptionToken::issue(subscriber_id))));
+
+        let subscriber_command_executor = SubscriberCommandExecutor::new(
+            subscriber_repository,
+            subscriber_messenger,
+            exposing_address,
+        );
 
         // when
         let request = Request {
             token: "existing-token".to_string(),
         };
         let response = execute(
-            State(Arc::new(subscriber_repository)),
+            State(subscriber_command_executor),
             State(Arc::new(subscription_token_repository)),
             Query(request),
         )

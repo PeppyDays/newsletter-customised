@@ -21,6 +21,9 @@ pub enum SubscriberCommand {
         id: Uuid,
         token: String,
     },
+    ConfirmSubscription {
+        id: Uuid,
+    },
 }
 
 #[derive(Clone)]
@@ -70,6 +73,18 @@ where
                 );
 
                 self.messenger.send(&subscriber, title, content).await
+            }
+            SubscriberCommand::ConfirmSubscription { id } => {
+                // TODO: Implement modifier in repository for transaction
+                let mut subscriber = self
+                    .repository
+                    .find_by_id(id)
+                    .await?
+                    .ok_or(SubscriberError::SubscriberNotFound(id))?;
+
+                subscriber.confirm();
+
+                self.repository.save(&subscriber).await
             }
         }
     }
