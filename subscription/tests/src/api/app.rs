@@ -1,9 +1,5 @@
 use std::collections::HashMap;
-use std::net::{
-    Ipv4Addr,
-    SocketAddr,
-    SocketAddrV4,
-};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -15,18 +11,12 @@ use tokio::net::TcpListener;
 use wiremock::MockServer;
 
 use domain::prelude::{
-    SubscriberCommandExecutor,
-    SubscriberQueryReader,
+    SubscriberCommandExecutor, SubscriberQueryReader, SubscriptionTokenCommandExecutor,
+    SubscriptionTokenQueryReader,
 };
 use messengers::prelude::SubscriberEmailMessenger;
-use repositories::prelude::{
-    SubscriberSeaOrmRepository,
-    SubscriptionTokenSeaOrmRepository,
-};
-use runner::{
-    configuration,
-    telemetry,
-};
+use repositories::prelude::{SubscriberSeaOrmRepository, SubscriptionTokenSeaOrmRepository};
+use runner::{configuration, telemetry};
 
 pub struct App {
     // application address
@@ -150,10 +140,18 @@ impl App {
         );
         let subscriber_query_reader = SubscriberQueryReader::new(subscriber_repository.clone());
 
+        // create subscription token command executor and query reader
+        let subscription_token_command_executor =
+            SubscriptionTokenCommandExecutor::new(subscription_token_repository.clone());
+        let subscription_token_query_reader =
+            SubscriptionTokenQueryReader::new(subscription_token_repository.clone());
+
         // create container for application context
         let container = api::runner::Container {
             subscriber_command_executor,
             subscriber_query_reader,
+            subscription_token_command_executor,
+            subscription_token_query_reader,
             subscription_token_repository: Arc::new(subscription_token_repository.clone()),
         };
 

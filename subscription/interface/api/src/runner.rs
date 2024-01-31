@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
 use axum::extract::FromRef;
+use tokio::net::TcpListener;
+
 use domain::prelude::{
     SubscriberCommandExecutor, SubscriberMessenger, SubscriberQueryReader, SubscriberRepository,
-    SubscriptionTokenCommandExecutor, SubscriptionTokenRepository,
+    SubscriptionTokenCommandExecutor, SubscriptionTokenQueryReader, SubscriptionTokenRepository,
 };
-use tokio::net::TcpListener;
 
 use crate::router;
 
@@ -20,6 +21,7 @@ where
     pub subscriber_command_executor: SubscriberCommandExecutor<R, M>,
     pub subscriber_query_reader: SubscriberQueryReader<R>,
     pub subscription_token_command_executor: SubscriptionTokenCommandExecutor<T>,
+    pub subscription_token_query_reader: SubscriptionTokenQueryReader<T>,
     pub subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
 }
 
@@ -52,6 +54,28 @@ where
     T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
 {
     fn from_ref(container: &Container<R, M, T>) -> Self {
+        container.subscription_token_command_executor.clone()
+    }
+}
+
+impl<R, M, T> FromRef<Container<R, M, T>> for SubscriptionTokenQueryReader<T>
+where
+    R: SubscriberRepository + Clone + Send + Sync + 'static,
+    M: SubscriberMessenger + Clone + Send + Sync + 'static,
+    T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
+{
+    fn from_ref(container: &Container<R, M, T>) -> Self {
+        container.subscription_token_query_reader.clone()
+    }
+}
+
+impl<R, M, T> FromRef<Container<R, M, T>> for Arc<dyn SubscriptionTokenRepository>
+where
+    R: SubscriberRepository + Clone + Send + Sync + 'static,
+    M: SubscriberMessenger + Clone + Send + Sync + 'static,
+    T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
+{
+    fn from_ref(container: &Container<R, M, T>) -> Self {
         container.subscription_token_repository.clone()
     }
 }
@@ -60,7 +84,7 @@ pub async fn run<R, M, T>(listener: TcpListener, container: Container<R, M, T>)
 where
     R: SubscriberRepository + Clone + Send + Sync + 'static,
     M: SubscriberMessenger + Clone + Send + Sync + 'static,
-    P: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
+    T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
 {
     let app = router::get_router(container).await;
 

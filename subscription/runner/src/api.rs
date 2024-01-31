@@ -4,8 +4,8 @@ use std::time::Duration;
 use secrecy::ExposeSecret;
 
 use domain::prelude::{
-    SubscriberCommandExecutor,
-    SubscriberQueryReader,
+    SubscriberCommandExecutor, SubscriberQueryReader, SubscriptionTokenCommandExecutor,
+    SubscriptionTokenQueryReader,
 };
 
 use crate::configuration;
@@ -81,6 +81,12 @@ pub async fn run(configuration: configuration::Configuration) {
             configuration.application.exposing_address.url,
         ),
         subscriber_query_reader: SubscriberQueryReader::new(subscriber_repository.clone()),
+        subscription_token_command_executor: SubscriptionTokenCommandExecutor::new(
+            subscription_token_repository.clone(),
+        ),
+        subscription_token_query_reader: SubscriptionTokenQueryReader::new(
+            subscription_token_repository.clone(),
+        ),
         subscription_token_repository: Arc::new(subscription_token_repository),
     };
 
