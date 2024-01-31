@@ -1,7 +1,10 @@
 use uuid::Uuid;
 
 use crate::subscriber::error::SubscriberError;
-use crate::subscriber::model::{Subscriber, SubscriberStatus};
+use crate::subscriber::model::{
+    Subscriber,
+    SubscriberStatus,
+};
 
 #[mockall::automock]
 #[async_trait::async_trait]

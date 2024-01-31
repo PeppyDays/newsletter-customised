@@ -1,3 +1,8 @@
+use sea_orm::entity::prelude::*;
+use sea_orm::sea_query::OnConflict;
+use sea_orm::ActiveValue;
+use uuid::Uuid;
+
 use domain::prelude::{
     Subscriber,
     SubscriberEmail,
@@ -6,10 +11,6 @@ use domain::prelude::{
     SubscriberRepository,
     SubscriberStatus,
 };
-use sea_orm::entity::prelude::*;
-use sea_orm::sea_query::OnConflict;
-use sea_orm::ActiveValue;
-use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscribers")]

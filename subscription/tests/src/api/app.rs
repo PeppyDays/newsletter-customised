@@ -1,5 +1,9 @@
 use std::collections::HashMap;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::{
+    Ipv4Addr,
+    SocketAddr,
+    SocketAddrV4,
+};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,12 +15,20 @@ use tokio::net::TcpListener;
 use wiremock::MockServer;
 
 use domain::prelude::{
-    SubscriberCommandExecutor, SubscriberQueryReader, SubscriptionTokenCommandExecutor,
+    SubscriberCommandExecutor,
+    SubscriberQueryReader,
+    SubscriptionTokenCommandExecutor,
     SubscriptionTokenQueryReader,
 };
 use messengers::prelude::SubscriberEmailMessenger;
-use repositories::prelude::{SubscriberSeaOrmRepository, SubscriptionTokenSeaOrmRepository};
-use runner::{configuration, telemetry};
+use repositories::prelude::{
+    SubscriberSeaOrmRepository,
+    SubscriptionTokenSeaOrmRepository,
+};
+use runner::{
+    configuration,
+    telemetry,
+};
 
 pub struct App {
     // application address
@@ -152,7 +164,6 @@ impl App {
             subscriber_query_reader,
             subscription_token_command_executor,
             subscription_token_query_reader,
-            subscription_token_repository: Arc::new(subscription_token_repository.clone()),
         };
 
         // create http client for accessing application APIs

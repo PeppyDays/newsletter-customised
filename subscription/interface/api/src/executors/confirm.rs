@@ -1,11 +1,19 @@
-use std::sync::Arc;
-
-use anyhow::Context;
-use axum::extract::{Query, State};
+use axum::extract::{
+    Query,
+    State,
+};
 use axum::http::StatusCode;
+
 use domain::prelude::{
-    SubscriberCommand, SubscriberCommandExecutor, SubscriberError, SubscriberMessenger,
-    SubscriberRepository, SubscriptionTokenRepository,
+    SubscriberCommand,
+    SubscriberCommandExecutor,
+    SubscriberError,
+    SubscriberMessenger,
+    SubscriberRepository,
+    SubscriptionTokenError,
+    SubscriptionTokenQuery,
+    SubscriptionTokenQueryReader,
+    SubscriptionTokenRepository,
 };
 
 use crate::error::ApiError;
@@ -17,24 +25,34 @@ pub struct Request {
 
 #[tracing::instrument(
     name = "Confirming a subscription",
-    skip(subscriber_command_executor, subscription_token_repository)
+    skip(subscriber_command_executor, subscription_token_query_reader,)
 )]
 pub async fn execute(
     State(subscriber_command_executor): State<
         SubscriberCommandExecutor<impl SubscriberRepository, impl SubscriberMessenger>,
     >,
-    State(subscription_token_repository): State<Arc<dyn SubscriptionTokenRepository>>,
+    State(subscription_token_query_reader): State<
+        SubscriptionTokenQueryReader<impl SubscriptionTokenRepository>,
+    >,
     Query(request): Query<Request>,
 ) -> Result<StatusCode, ApiError> {
-    let subscription_token = subscription_token_repository
-        .find_by_token(&request.token)
+    let inquire_subscription_token_by_token_query =
+        SubscriptionTokenQuery::InquireSubscriptionTokenByToken {
+            token: request.token,
+        };
+    let subscription_token = subscription_token_query_reader
+        .read(inquire_subscription_token_by_token_query)
         .await
-        .context("Failed to get subscription token")
-        .map_err(|error| ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, error))?
-        .ok_or(ApiError::new(
-            StatusCode::NOT_FOUND,
-            anyhow::anyhow!("No subscription token found for the given subscription token"),
-        ))?;
+        .map_err(|error| match error {
+            SubscriptionTokenError::SubscriptionTokenNotFound(_) => ApiError::new(
+                StatusCode::NOT_FOUND,
+                anyhow::anyhow!("The given token doesn't exist"),
+            ),
+            _ => ApiError::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                anyhow::anyhow!("Failed to get subscription token"),
+            ),
+        })?;
 
     let subscriber_id = subscription_token.subscriber_id;
     let confirm_subscription_command = SubscriberCommand::ConfirmSubscription { id: subscriber_id };
@@ -55,8 +73,11 @@ pub async fn execute(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
-        Subscriber, SubscriptionToken,
+        MockSubscriberMessenger,
+        MockSubscriberRepository,
+        MockSubscriptionTokenRepository,
+        Subscriber,
+        SubscriptionToken,
     };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
@@ -83,6 +104,8 @@ mod tests {
             subscriber_messenger,
             exposing_address,
         );
+        let subscription_token_query_reader =
+            SubscriptionTokenQueryReader::new(subscription_token_repository);
 
         // when
         let request = Request {
@@ -90,7 +113,7 @@ mod tests {
         };
         let response = execute(
             State(subscriber_command_executor),
-            State(Arc::new(subscription_token_repository)),
+            State(subscription_token_query_reader),
             Query(request),
         )
         .await;
@@ -122,6 +145,8 @@ mod tests {
             subscriber_messenger,
             exposing_address,
         );
+        let subscription_token_query_reader =
+            SubscriptionTokenQueryReader::new(subscription_token_repository);
 
         // when
         let request = Request {
@@ -129,7 +154,7 @@ mod tests {
         };
         let response = execute(
             State(subscriber_command_executor),
-            State(Arc::new(subscription_token_repository)),
+            State(subscription_token_query_reader),
             Query(request),
         )
         .await;
@@ -171,6 +196,8 @@ mod tests {
             subscriber_messenger,
             exposing_address,
         );
+        let subscription_token_query_reader =
+            SubscriptionTokenQueryReader::new(subscription_token_repository);
 
         // when
         let request = Request {
@@ -178,7 +205,7 @@ mod tests {
         };
         let response = execute(
             State(subscriber_command_executor),
-            State(Arc::new(subscription_token_repository)),
+            State(subscription_token_query_reader),
             Query(request),
         )
         .await;

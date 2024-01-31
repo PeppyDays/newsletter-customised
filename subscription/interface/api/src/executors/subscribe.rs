@@ -5,9 +5,15 @@ use axum::Form;
 use uuid::Uuid;
 
 use domain::prelude::{
-    SubscriberCommand, SubscriberCommandExecutor, SubscriberError, SubscriberMessenger,
-    SubscriberRepository, SubscriptionToken, SubscriptionTokenCommand,
-    SubscriptionTokenCommandExecutor, SubscriptionTokenRepository,
+    SubscriberCommand,
+    SubscriberCommandExecutor,
+    SubscriberError,
+    SubscriberMessenger,
+    SubscriberRepository,
+    SubscriptionToken,
+    SubscriptionTokenCommand,
+    SubscriptionTokenCommandExecutor,
+    SubscriptionTokenRepository,
 };
 
 use crate::error::ApiError;
@@ -80,8 +86,12 @@ pub async fn execute(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
-        Subscriber, SubscriberEmail, SubscriberName,
+        MockSubscriberMessenger,
+        MockSubscriberRepository,
+        MockSubscriptionTokenRepository,
+        Subscriber,
+        SubscriberEmail,
+        SubscriberName,
     };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;

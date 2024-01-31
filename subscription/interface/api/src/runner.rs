@@ -1,11 +1,14 @@
-use std::sync::Arc;
-
 use axum::extract::FromRef;
 use tokio::net::TcpListener;
 
 use domain::prelude::{
-    SubscriberCommandExecutor, SubscriberMessenger, SubscriberQueryReader, SubscriberRepository,
-    SubscriptionTokenCommandExecutor, SubscriptionTokenQueryReader, SubscriptionTokenRepository,
+    SubscriberCommandExecutor,
+    SubscriberMessenger,
+    SubscriberQueryReader,
+    SubscriberRepository,
+    SubscriptionTokenCommandExecutor,
+    SubscriptionTokenQueryReader,
+    SubscriptionTokenRepository,
 };
 
 use crate::router;
@@ -22,7 +25,6 @@ where
     pub subscriber_query_reader: SubscriberQueryReader<R>,
     pub subscription_token_command_executor: SubscriptionTokenCommandExecutor<T>,
     pub subscription_token_query_reader: SubscriptionTokenQueryReader<T>,
-    pub subscription_token_repository: Arc<dyn SubscriptionTokenRepository>,
 }
 
 impl<R, M, T> FromRef<Container<R, M, T>> for SubscriberQueryReader<R>
@@ -66,17 +68,6 @@ where
 {
     fn from_ref(container: &Container<R, M, T>) -> Self {
         container.subscription_token_query_reader.clone()
-    }
-}
-
-impl<R, M, T> FromRef<Container<R, M, T>> for Arc<dyn SubscriptionTokenRepository>
-where
-    R: SubscriberRepository + Clone + Send + Sync + 'static,
-    M: SubscriberMessenger + Clone + Send + Sync + 'static,
-    T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
-{
-    fn from_ref(container: &Container<R, M, T>) -> Self {
-        container.subscription_token_repository.clone()
     }
 }
 

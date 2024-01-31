@@ -1,10 +1,11 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use secrecy::ExposeSecret;
 
 use domain::prelude::{
-    SubscriberCommandExecutor, SubscriberQueryReader, SubscriptionTokenCommandExecutor,
+    SubscriberCommandExecutor,
+    SubscriberQueryReader,
+    SubscriptionTokenCommandExecutor,
     SubscriptionTokenQueryReader,
 };
 
@@ -87,7 +88,6 @@ pub async fn run(configuration: configuration::Configuration) {
         subscription_token_query_reader: SubscriptionTokenQueryReader::new(
             subscription_token_repository.clone(),
         ),
-        subscription_token_repository: Arc::new(subscription_token_repository),
     };
 
     // run the application api

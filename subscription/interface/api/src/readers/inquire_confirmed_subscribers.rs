@@ -3,7 +3,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 
-use domain::prelude::{Subscriber, SubscriberQuery, SubscriberQueryReader, SubscriberRepository};
+use domain::prelude::{
+    Subscriber,
+    SubscriberQuery,
+    SubscriberQueryReader,
+    SubscriberRepository,
+};
 
 use crate::error::ApiError;
 
