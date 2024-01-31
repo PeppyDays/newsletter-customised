@@ -1,8 +1,5 @@
 use crate::subscriber::error::SubscriberError;
-use crate::subscriber::model::{
-    Subscriber,
-    SubscriberStatus,
-};
+use crate::subscriber::model::{Subscriber, SubscriberStatus};
 use crate::subscriber::repository::SubscriberRepository;
 
 pub enum SubscriberQuery {
@@ -10,7 +7,10 @@ pub enum SubscriberQuery {
 }
 
 #[derive(Clone)]
-pub struct SubscriberQueryReader<R: SubscriberRepository> {
+pub struct SubscriberQueryReader<R>
+where
+    R: SubscriberRepository,
+{
     repository: R,
 }
 
@@ -22,9 +22,13 @@ where
         Self { repository }
     }
 
-    pub async fn read(&self, _query: SubscriberQuery) -> Result<Vec<Subscriber>, SubscriberError> {
-        self.repository
-            .find_by_status(SubscriberStatus::Confirmed)
-            .await
+    pub async fn read(&self, query: SubscriberQuery) -> Result<Vec<Subscriber>, SubscriberError> {
+        match query {
+            SubscriberQuery::InquireConfirmedSubscribers => {
+                self.repository
+                    .find_by_status(SubscriberStatus::Confirmed)
+                    .await
+            }
+        }
     }
 }
