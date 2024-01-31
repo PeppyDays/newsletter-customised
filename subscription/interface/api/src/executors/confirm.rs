@@ -78,6 +78,8 @@ mod tests {
         MockSubscriberRepository,
         MockSubscriptionTokenRepository,
         Subscriber,
+        SubscriberEmail,
+        SubscriberName,
         SubscriptionToken,
     };
     use fake::faker::internet::en::SafeEmail;
@@ -178,10 +180,11 @@ mod tests {
             .expect_find_by_id()
             .once()
             .returning(move |_| {
-                Ok(Option::Some(
-                    Subscriber::register(subscriber_id, SafeEmail().fake(), FirstName().fake())
-                        .unwrap(),
-                ))
+                Ok(Option::Some(Subscriber::new(
+                    subscriber_id,
+                    SubscriberEmail::parse(SafeEmail().fake()).unwrap(),
+                    SubscriberName::parse(FirstName().fake()).unwrap(),
+                )))
             });
         subscriber_repository
             .expect_save()

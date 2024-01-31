@@ -20,19 +20,6 @@ impl Subscriber {
         }
     }
 
-    // TODO: Remove this method
-    pub fn register(id: Uuid, email: String, name: String) -> Result<Self, SubscriberError> {
-        let name = SubscriberName::parse(name)?;
-        let email = SubscriberEmail::parse(email)?;
-
-        Ok(Self {
-            id,
-            email,
-            name,
-            status: SubscriberStatus::Unconfirmed,
-        })
-    }
-
     pub fn confirm(&mut self) {
         self.status = SubscriberStatus::Confirmed;
     }

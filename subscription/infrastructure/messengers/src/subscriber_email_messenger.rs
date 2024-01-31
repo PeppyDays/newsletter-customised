@@ -68,10 +68,6 @@ mod tests {
         assert_err,
         assert_ok,
     };
-    use domain::prelude::{
-        Subscriber,
-        SubscriberMessenger,
-    };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{
         Paragraph,
@@ -91,6 +87,13 @@ mod tests {
         Mock,
         MockServer,
         ResponseTemplate,
+    };
+
+    use domain::prelude::{
+        Subscriber,
+        SubscriberEmail,
+        SubscriberMessenger,
+        SubscriberName,
     };
 
     use crate::subscriber_email_messenger::SubscriberEmailMessenger;
@@ -134,13 +137,20 @@ mod tests {
         (email_server, messenger)
     }
 
+    fn generate_subscriber() -> Subscriber {
+        let id = Uuid::new_v4();
+        let email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
+        let name = SubscriberName::parse(FirstName().fake()).unwrap();
+
+        Subscriber::new(id, email, name)
+    }
+
     #[tokio::test]
     async fn send_email_fires_request_to_email_server() {
         // given
         let (email_server, messenger) = run_email_server().await;
 
-        let subscriber =
-            Subscriber::register(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+        let subscriber = generate_subscriber();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 
@@ -169,8 +179,7 @@ mod tests {
         // given
         let (email_server, messenger) = run_email_server().await;
 
-        let subscriber =
-            Subscriber::register(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+        let subscriber = generate_subscriber();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 
@@ -192,8 +201,7 @@ mod tests {
         // given
         let (email_server, messenger) = run_email_server().await;
 
-        let subscriber =
-            Subscriber::register(Uuid::new_v4(), SafeEmail().fake(), FirstName().fake()).unwrap();
+        let subscriber = generate_subscriber();
         let subject: String = Sentence(1..2).fake();
         let content: String = Paragraph(1..10).fake();
 

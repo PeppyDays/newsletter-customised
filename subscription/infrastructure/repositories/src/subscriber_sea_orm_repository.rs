@@ -192,10 +192,10 @@ mod tests {
 
     fn generate_subscriber() -> Subscriber {
         let id = Uuid::new_v4();
-        let email = SafeEmail().fake();
-        let name = FirstName().fake();
+        let email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
+        let name = SubscriberName::parse(FirstName().fake()).unwrap();
 
-        Subscriber::register(id, email, name).unwrap()
+        Subscriber::new(id, email, name)
     }
 
     #[tokio::test]
