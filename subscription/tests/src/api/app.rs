@@ -14,12 +14,6 @@ use secrecy::ExposeSecret;
 use tokio::net::TcpListener;
 use wiremock::MockServer;
 
-use domain::prelude::{
-    SubscriberCommandExecutor,
-    SubscriberQueryReader,
-    SubscriptionTokenCommandExecutor,
-    SubscriptionTokenQueryReader,
-};
 use messengers::prelude::SubscriberEmailMessenger;
 use repositories::prelude::{
     SubscriberSeaOrmRepository,
@@ -144,27 +138,13 @@ impl App {
             configuration.messenger.email.sender,
         );
 
-        // create subscriber command executor and query reader
-        let subscriber_command_executor = SubscriberCommandExecutor::new(
+        // create container for application context
+        let container = api::runner::Container::new(
             subscriber_repository.clone(),
-            subscriber_messenger,
+            subscriber_messenger.clone(),
+            subscription_token_repository.clone(),
             configuration.application.exposing_address.url,
         );
-        let subscriber_query_reader = SubscriberQueryReader::new(subscriber_repository.clone());
-
-        // create subscription token command executor and query reader
-        let subscription_token_command_executor =
-            SubscriptionTokenCommandExecutor::new(subscription_token_repository.clone());
-        let subscription_token_query_reader =
-            SubscriptionTokenQueryReader::new(subscription_token_repository.clone());
-
-        // create container for application context
-        let container = api::runner::Container {
-            subscriber_command_executor,
-            subscriber_query_reader,
-            subscription_token_command_executor,
-            subscription_token_query_reader,
-        };
 
         // create http client for accessing application APIs
         let client = reqwest::Client::new();

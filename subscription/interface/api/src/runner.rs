@@ -20,10 +20,10 @@ where
     M: SubscriberMessenger + Clone + Send + Sync + 'static,
     T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
 {
-    pub subscriber_command_executor: SubscriberCommandExecutor<R, M>,
-    pub subscriber_query_reader: SubscriberQueryReader<R>,
-    pub subscription_token_command_executor: SubscriptionTokenCommandExecutor<T>,
-    pub subscription_token_query_reader: SubscriptionTokenQueryReader<T>,
+    subscriber_command_executor: SubscriberCommandExecutor<R, M>,
+    subscriber_query_reader: SubscriberQueryReader<R>,
+    subscription_token_command_executor: SubscriptionTokenCommandExecutor<T>,
+    subscription_token_query_reader: SubscriptionTokenQueryReader<T>,
 }
 
 impl<R, M, T> Container<R, M, T>
@@ -32,7 +32,7 @@ where
     M: SubscriberMessenger + Clone + Send + Sync + 'static,
     T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
 {
-    fn new(
+    pub fn new(
         subscriber_repository: R,
         subscriber_messenger: M,
         subscription_token_repository: T,

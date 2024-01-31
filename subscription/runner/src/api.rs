@@ -2,13 +2,6 @@ use std::time::Duration;
 
 use secrecy::ExposeSecret;
 
-use domain::prelude::{
-    SubscriberCommandExecutor,
-    SubscriberQueryReader,
-    SubscriptionTokenCommandExecutor,
-    SubscriptionTokenQueryReader,
-};
-
 use crate::configuration;
 
 pub async fn run(configuration: configuration::Configuration) {
@@ -78,20 +71,12 @@ pub async fn run(configuration: configuration::Configuration) {
     let subscriber_messenger = messengers::prelude::SubscriberFakeMessenger::new();
 
     // configure container which of the application context
-    let container = api::runner::Container {
-        subscriber_command_executor: SubscriberCommandExecutor::new(
-            subscriber_repository.clone(),
-            subscriber_messenger.clone(),
-            configuration.application.exposing_address.url,
-        ),
-        subscriber_query_reader: SubscriberQueryReader::new(subscriber_repository.clone()),
-        subscription_token_command_executor: SubscriptionTokenCommandExecutor::new(
-            subscription_token_repository.clone(),
-        ),
-        subscription_token_query_reader: SubscriptionTokenQueryReader::new(
-            subscription_token_repository.clone(),
-        ),
-    };
+    let container = api::runner::Container::new(
+        subscriber_repository,
+        subscriber_messenger,
+        subscription_token_repository,
+        configuration.application.exposing_address.url,
+    );
 
     // run the application api
     api::runner::run(listener, container).await;
