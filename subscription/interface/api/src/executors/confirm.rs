@@ -1,19 +1,10 @@
-use axum::extract::{
-    Query,
-    State,
-};
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 
 use domain::prelude::{
-    SubscriberCommand,
-    SubscriberCommandExecutor,
-    SubscriberError,
-    SubscriberMessenger,
-    SubscriberRepository,
-    SubscriptionTokenError,
-    SubscriptionTokenQuery,
-    SubscriptionTokenQueryReader,
-    SubscriptionTokenRepository,
+    SubscriberCommand, SubscriberCommandExecutor, SubscriberError, SubscriberMessenger,
+    SubscriberRepository, SubscriptionTokenError, SubscriptionTokenQuery,
+    SubscriptionTokenQueryReader, SubscriptionTokenRepository,
 };
 
 use crate::error::ApiError;
@@ -74,13 +65,8 @@ pub async fn execute(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberMessenger,
-        MockSubscriberRepository,
-        MockSubscriptionTokenRepository,
-        Subscriber,
-        SubscriberEmail,
-        SubscriberName,
-        SubscriptionToken,
+        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
+        Subscriber, SubscriberEmail, SubscriberName, SubscriptionToken,
     };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;
@@ -141,7 +127,12 @@ mod tests {
         subscription_token_repository
             .expect_find_by_token()
             .once()
-            .returning(|_| Ok(Option::Some(SubscriptionToken::issue(Uuid::new_v4()))));
+            .returning(|_| {
+                Ok(Option::Some(SubscriptionToken::new(
+                    Uuid::new_v4().to_string(),
+                    Uuid::new_v4(),
+                )))
+            });
 
         let subscriber_command_executor = SubscriberCommandExecutor::new(
             subscriber_repository,
@@ -193,7 +184,12 @@ mod tests {
         subscription_token_repository
             .expect_find_by_token()
             .once()
-            .returning(move |_| Ok(Option::Some(SubscriptionToken::issue(subscriber_id))));
+            .returning(move |_| {
+                Ok(Option::Some(SubscriptionToken::new(
+                    Uuid::new_v4().to_string(),
+                    subscriber_id,
+                )))
+            });
 
         let subscriber_command_executor = SubscriberCommandExecutor::new(
             subscriber_repository,

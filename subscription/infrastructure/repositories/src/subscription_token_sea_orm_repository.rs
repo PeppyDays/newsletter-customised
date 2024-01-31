@@ -2,11 +2,7 @@ use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
 
-use domain::prelude::{
-    SubscriptionToken,
-    SubscriptionTokenError,
-    SubscriptionTokenRepository,
-};
+use domain::prelude::{SubscriptionToken, SubscriptionTokenError, SubscriptionTokenRepository};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscription_tokens")]
@@ -154,7 +150,8 @@ mod tests {
         // given
         let repository = get_repository(false).await;
         let subscriber_id = Uuid::new_v4();
-        let subscription_token = SubscriptionToken::issue(subscriber_id);
+        let token = Uuid::new_v4().to_string();
+        let subscription_token = SubscriptionToken::new(token, subscriber_id);
 
         // when
         repository.save(&subscription_token).await.unwrap();
@@ -176,8 +173,10 @@ mod tests {
     async fn saving_duplicate_token_is_not_allowed() {
         // given
         let repository = get_repository(false).await;
-        let subscription_token_1 = SubscriptionToken::issue(Uuid::new_v4());
-        let mut subscription_token_2 = SubscriptionToken::issue(Uuid::new_v4());
+        let subscription_token_1 =
+            SubscriptionToken::new(Uuid::new_v4().to_string(), Uuid::new_v4());
+        let mut subscription_token_2 =
+            SubscriptionToken::new(Uuid::new_v4().to_string(), Uuid::new_v4());
         subscription_token_2.token = subscription_token_1.token.clone();
 
         repository.save(&subscription_token_1).await.unwrap();
@@ -202,7 +201,8 @@ mod tests {
         // given
         let repository = get_repository(false).await;
         let subscriber_id = Uuid::new_v4();
-        let subscription_token = SubscriptionToken::issue(subscriber_id);
+        let token = Uuid::new_v4().to_string();
+        let subscription_token = SubscriptionToken::new(token, subscriber_id);
 
         repository.save(&subscription_token).await.unwrap();
 
