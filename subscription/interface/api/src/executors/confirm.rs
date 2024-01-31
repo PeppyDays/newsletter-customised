@@ -1,10 +1,19 @@
-use axum::extract::{Query, State};
+use axum::extract::{
+    Query,
+    State,
+};
 use axum::http::StatusCode;
 
 use domain::prelude::{
-    SubscriberCommand, SubscriberCommandExecutor, SubscriberError, SubscriberMessenger,
-    SubscriberRepository, SubscriptionTokenError, SubscriptionTokenQuery,
-    SubscriptionTokenQueryReader, SubscriptionTokenRepository,
+    SubscriberCommand,
+    SubscriberCommandExecutor,
+    SubscriberError,
+    SubscriberMessenger,
+    SubscriberRepository,
+    SubscriptionTokenError,
+    SubscriptionTokenQuery,
+    SubscriptionTokenQueryReader,
+    SubscriptionTokenRepository,
 };
 
 use crate::error::ApiError;
@@ -65,8 +74,13 @@ pub async fn execute(
 #[cfg(test)]
 mod tests {
     use domain::prelude::{
-        MockSubscriberMessenger, MockSubscriberRepository, MockSubscriptionTokenRepository,
-        Subscriber, SubscriberEmail, SubscriberName, SubscriptionToken,
+        MockSubscriberMessenger,
+        MockSubscriberRepository,
+        MockSubscriptionTokenRepository,
+        Subscriber,
+        SubscriberEmail,
+        SubscriberName,
+        SubscriptionToken,
     };
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::name::en::FirstName;

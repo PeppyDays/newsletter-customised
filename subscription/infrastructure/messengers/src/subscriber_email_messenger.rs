@@ -10,6 +10,7 @@ pub struct SubscriberEmailMessenger {
     host: reqwest::Url,
     sender: String,
 }
+
 impl SubscriberEmailMessenger {
     pub fn new(client: reqwest::Client, host: reqwest::Url, sender: String) -> Self {
         Self {

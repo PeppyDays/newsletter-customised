@@ -32,4 +32,4 @@ logging:
   crates:
     # api: info
     # repositories: warn
-    sqlx: warn
+    sqlx: debug

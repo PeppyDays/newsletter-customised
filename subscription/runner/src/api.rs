@@ -58,21 +58,24 @@ pub async fn run(configuration: configuration::Configuration) {
         .expect("Failed to parse email server's API key"),
     );
 
-    let subscriber_messenger = messengers::prelude::SubscriberEmailMessenger::new(
-        messengers::prelude::HttpClient::builder()
-            .default_headers(headers)
-            .timeout(Duration::from_secs(
-                configuration.messenger.pool_options.connection_timeout,
-            ))
-            .connect_timeout(Duration::from_secs(
-                configuration.messenger.pool_options.request_timeout,
-            ))
-            .build()
-            .expect("Failed to create email client pool"),
-        messengers::prelude::HttpUrl::parse(configuration.messenger.email.url.as_ref())
-            .expect("Failed to parse email server's URL"),
-        configuration.messenger.email.sender,
-    );
+    // bind fake messenger for testing in local
+    // which means messenger always returns okay
+    // let subscriber_messenger = messengers::prelude::SubscriberEmailMessenger::new(
+    //     messengers::prelude::HttpClient::builder()
+    //         .default_headers(headers)
+    //         .timeout(Duration::from_secs(
+    //             configuration.messenger.pool_options.connection_timeout,
+    //         ))
+    //         .connect_timeout(Duration::from_secs(
+    //             configuration.messenger.pool_options.request_timeout,
+    //         ))
+    //         .build()
+    //         .expect("Failed to create email client pool"),
+    //     messengers::prelude::HttpUrl::parse(configuration.messenger.email.url.as_ref())
+    //         .expect("Failed to parse email server's URL"),
+    //     configuration.messenger.email.sender,
+    // );
+    let subscriber_messenger = messengers::prelude::SubscriberFakeMessenger::new();
 
     // configure container which of the application context
     let container = api::runner::Container {

@@ -2,7 +2,11 @@ use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use uuid::Uuid;
 
-use domain::prelude::{SubscriptionToken, SubscriptionTokenError, SubscriptionTokenRepository};
+use domain::prelude::{
+    SubscriptionToken,
+    SubscriptionTokenError,
+    SubscriptionTokenRepository,
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "subscription_tokens")]
