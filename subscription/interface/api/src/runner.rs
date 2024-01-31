@@ -13,7 +13,6 @@ use domain::prelude::{
 
 use crate::router;
 
-// TODO: Add a new method
 #[derive(Clone)]
 pub struct Container<R, M, T>
 where
@@ -25,6 +24,35 @@ where
     pub subscriber_query_reader: SubscriberQueryReader<R>,
     pub subscription_token_command_executor: SubscriptionTokenCommandExecutor<T>,
     pub subscription_token_query_reader: SubscriptionTokenQueryReader<T>,
+}
+
+impl<R, M, T> Container<R, M, T>
+where
+    R: SubscriberRepository + Clone + Send + Sync + 'static,
+    M: SubscriberMessenger + Clone + Send + Sync + 'static,
+    T: SubscriptionTokenRepository + Clone + Send + Sync + 'static,
+{
+    fn new(
+        subscriber_repository: R,
+        subscriber_messenger: M,
+        subscription_token_repository: T,
+        exposing_address: String,
+    ) -> Self {
+        Self {
+            subscriber_command_executor: SubscriberCommandExecutor::new(
+                subscriber_repository.clone(),
+                subscriber_messenger.clone(),
+                exposing_address,
+            ),
+            subscriber_query_reader: SubscriberQueryReader::new(subscriber_repository.clone()),
+            subscription_token_command_executor: SubscriptionTokenCommandExecutor::new(
+                subscription_token_repository.clone(),
+            ),
+            subscription_token_query_reader: SubscriptionTokenQueryReader::new(
+                subscription_token_repository.clone(),
+            ),
+        }
+    }
 }
 
 impl<R, M, T> FromRef<Container<R, M, T>> for SubscriberQueryReader<R>
