@@ -18,6 +18,7 @@ use domain::prelude::{
 
 use crate::error::ApiError;
 
+#[readonly::make]
 #[derive(serde::Deserialize, Debug)]
 pub struct Request {
     token: String,

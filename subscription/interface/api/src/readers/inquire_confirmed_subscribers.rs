@@ -12,6 +12,7 @@ use domain::prelude::{
 
 use crate::error::ApiError;
 
+#[readonly::make]
 #[derive(serde::Serialize, Debug, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Response {
