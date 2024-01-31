@@ -32,17 +32,4 @@ impl SubscriptionToken {
     pub async fn generate_token() -> String {
         Uuid::new_v4().to_string()
     }
-
-    // TODO: Remove this method
-    pub fn issue(subscriber_id: Uuid) -> Self {
-        let token = Uuid::new_v4().to_string();
-        let expiration_duration = Duration::hours(Self::EXPIRATION_DURATION_IN_HOURS);
-
-        Self {
-            token,
-            subscriber_id,
-            issued_at: Utc::now(),
-            expired_at: Utc::now().add(expiration_duration),
-        }
-    }
 }
