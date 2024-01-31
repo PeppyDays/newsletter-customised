@@ -37,3 +37,6 @@ fmt-check:
 
 lint-check:
 	cargo clippy -- -D warnings
+
+find-unused:
+	cargo +nightly udeps --all-targets --quiet

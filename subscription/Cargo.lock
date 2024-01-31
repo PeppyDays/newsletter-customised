@@ -97,14 +97,12 @@ dependencies = [
  "axum",
  "domain",
  "fake",
- "reqwest",
  "serde",
  "serde_json",
  "tokio",
  "tower-http",
  "tracing",
  "uuid",
- "wiremock",
 ]
 
 [[package]]
