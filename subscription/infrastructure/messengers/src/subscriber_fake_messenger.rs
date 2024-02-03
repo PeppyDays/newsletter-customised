@@ -13,6 +13,12 @@ impl SubscriberFakeMessenger {
     }
 }
 
+impl Default for SubscriberFakeMessenger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[async_trait::async_trait]
 impl SubscriberMessenger for SubscriberFakeMessenger {
     #[tracing::instrument(name = "Sending an fake message for subscription", skip(self))]

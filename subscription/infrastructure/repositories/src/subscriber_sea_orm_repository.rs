@@ -1,6 +1,12 @@
+use std::future::Future;
+
+use anyhow::Context;
 use sea_orm::entity::prelude::*;
 use sea_orm::sea_query::OnConflict;
-use sea_orm::ActiveValue;
+use sea_orm::{
+    ActiveValue,
+    TransactionTrait,
+};
 use uuid::Uuid;
 
 use domain::prelude::{
@@ -96,6 +102,42 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
                     SubscriberError::RepositoryOperationFailed(error.into())
                 }
             })?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "Modifying subscriber with modifier and saving the modified subscriber",
+        skip(self, modifier)
+    )]
+    async fn modify<F, Fut>(&self, id: Uuid, modifier: F) -> Result<(), SubscriberError>
+    where
+        F: Fn(Subscriber) -> Fut + Send + 'static,
+        Fut: Future<Output = Result<Subscriber, SubscriberError>> + Send + 'static,
+    {
+        let transaction = self
+            .pool
+            .begin()
+            .await
+            .context("Failed to start a transaction")
+            .map_err(SubscriberError::RepositoryOperationFailed)?;
+
+        let subscriber = Entity::find()
+            .filter(Column::Id.eq(id))
+            .one(&transaction)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .map(Subscriber::from)
+            .ok_or(SubscriberError::SubscriberNotFound(id))?;
+
+        let subscriber = modifier(subscriber).await?;
+        self.save(&subscriber).await?;
+
+        transaction
+            .commit()
+            .await
+            .context("Failed to commit a transaction")
+            .map_err(SubscriberError::RepositoryOperationFailed)?;
 
         Ok(())
     }
@@ -294,5 +336,49 @@ mod tests {
             response.unwrap_err(),
             SubscriberError::InvalidSubscriberEmail
         ));
+    }
+
+    #[tokio::test]
+    async fn modifying_subscriber_status_to_confirmed_succeeds_when_no_errors_from_repository() {
+        // given
+        let repository = get_repository(true).await;
+        let subscriber = generate_subscriber();
+        repository.save(&subscriber).await.unwrap();
+
+        // when
+        repository
+            .modify(subscriber.id, |mut subscriber| async {
+                subscriber.confirm();
+                Ok(subscriber)
+            })
+            .await
+            .unwrap();
+
+        // then
+        let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
+        assert_eq!(persisted_subscriber.status, SubscriberStatus::Confirmed);
+    }
+
+    #[tokio::test]
+    async fn modifying_subscriber_ensures_atomic_operation_despite_of_repository_error() {
+        // given
+        let repository = get_repository(true).await;
+        let subscriber = generate_subscriber();
+        repository.save(&subscriber).await.unwrap();
+
+        // when
+        let response = repository
+            .modify(subscriber.id, |mut subscriber| async move {
+                subscriber.confirm();
+                Err(SubscriberError::RepositoryOperationFailed(anyhow::anyhow!(
+                    "Some errors"
+                )))
+            })
+            .await;
+
+        // then
+        assert!(response.is_err());
+        let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
+        assert_eq!(persisted_subscriber.status, SubscriberStatus::Unconfirmed);
     }
 }
