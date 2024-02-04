@@ -3,9 +3,11 @@ resolver = "2"
 members = [
   "runner",
   "interface/api",
+  "interface/queue",
   "infrastructure/gateways",
+  "infrastructure/repositories",
   "domain",
-  "tests", "infrastructure/repositories",
+  "tests",
 ]
 
 [workspace.lints.rust]
