@@ -25,7 +25,7 @@ impl Subscriber {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, strum_macros::AsRefStr, strum_macros::EnumString)]
 pub enum SubscriberStatus {
     Confirmed,
     Unconfirmed,

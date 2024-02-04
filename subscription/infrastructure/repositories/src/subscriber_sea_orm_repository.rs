@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::str::FromStr;
 
 use anyhow::Context;
 use sea_orm::entity::prelude::*;
@@ -42,12 +43,7 @@ impl From<&Subscriber> for ActiveModel {
             id: ActiveValue::Set(subscriber.id),
             email: ActiveValue::Set(subscriber.email.as_ref().to_string()),
             name: ActiveValue::Set(subscriber.name.as_ref().to_string()),
-            // TODO: Find a cleaner way to serialise and deserialise enum
-            status: ActiveValue::Set(match subscriber.status {
-                SubscriberStatus::Confirmed => "Confirmed".to_string(),
-                SubscriberStatus::Unconfirmed => "Unconfirmed".to_string(),
-                SubscriberStatus::Unknown => "Unknown".to_string(),
-            }),
+            status: ActiveValue::Set(subscriber.status.as_ref().to_string()),
         }
     }
 }
@@ -58,11 +54,7 @@ impl From<Model> for Subscriber {
             id: data_model.id,
             email: SubscriberEmail::parse(data_model.email).unwrap(),
             name: SubscriberName::parse(data_model.name).unwrap(),
-            status: match data_model.status.as_ref() {
-                "Confirmed" => SubscriberStatus::Confirmed,
-                "Unconfirmed" => SubscriberStatus::Unconfirmed,
-                _ => SubscriberStatus::Unknown,
-            },
+            status: SubscriberStatus::from_str(&data_model.status).unwrap(),
         }
     }
 }
