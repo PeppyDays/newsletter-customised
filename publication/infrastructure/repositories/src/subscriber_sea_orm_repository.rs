@@ -1,19 +1,11 @@
-use std::future::Future;
-
 use anyhow::Context;
 use sea_orm::entity::prelude::*;
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{
-    ActiveValue,
-    TransactionTrait,
-};
+use sea_orm::{ActiveValue, TransactionTrait};
 use uuid::Uuid;
 
 use domain::prelude::{
-    Subscriber,
-    SubscriberEmail,
-    SubscriberEmailVerifiationStatus,
-    SubscriberError,
+    Subscriber, SubscriberEmail, SubscriberEmailVerifiationStatus, SubscriberError,
     SubscriberRepository,
 };
 
@@ -153,11 +145,11 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
     }
 
     #[tracing::instrument(name = "Modifying subscriber details", skip(self, modifier))]
-    async fn modify<F, Fut>(&self, id: Uuid, modifier: F) -> Result<(), SubscriberError>
-    where
-        F: Fn(Subscriber) -> Fut + Send + 'static,
-        Fut: Future<Output = Result<Subscriber, SubscriberError>> + Send + 'static,
-    {
+    async fn modify(
+        &self,
+        id: Uuid,
+        modifier: fn(Subscriber) -> Result<Subscriber, SubscriberError>,
+    ) -> Result<(), SubscriberError> {
         let transaction = self
             .pool
             .begin()
@@ -173,7 +165,7 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
             .map(Subscriber::from)
             .ok_or(SubscriberError::SubscriberNotFound(id))?;
 
-        let subscriber = modifier(subscriber).await?;
+        let subscriber = modifier(subscriber)?;
         self.save(&subscriber).await?;
 
         transaction
@@ -320,7 +312,7 @@ mod tests {
 
         // when
         repository
-            .modify(subscriber.id, |mut subscriber| async {
+            .modify(subscriber.id, |mut subscriber| {
                 subscriber.name = "New name".to_string();
                 Ok(subscriber)
             })
@@ -341,7 +333,7 @@ mod tests {
 
         // when
         let response = repository
-            .modify(subscriber.id, |mut _subscriber| async move {
+            .modify(subscriber.id, |mut _subscriber| {
                 Err(SubscriberError::RepositoryOperationFailed(anyhow::anyhow!(
                     "Some errors"
                 )))
