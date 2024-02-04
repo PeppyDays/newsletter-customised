@@ -1,0 +1,15 @@
+application:
+  listening_address:
+    host: 127.0.0.1
+    port: 28080
+
+gateways:
+  subscription:
+    url: http://127.0.0.1:18080
+
+logging:
+  global: info
+  crates:
+    # api: info
+    # gateways: warn
+    sqlx: debug

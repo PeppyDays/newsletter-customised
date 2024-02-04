@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  publication-local-db:
+    image: postgres
+    hostname: publication-local-db
+    container_name: publication-local-db
+    ports:
+      - "25432:5432"
+    environment:
+      POSTGRES_USER: publication
+      POSTGRES_PASSWORD: welcome
+      POSTGRES_DB: publication
+    command: postgres -c "max_connections=1000"
