@@ -123,7 +123,7 @@ pub struct EmailClientPoolOptions {
 
 #[derive(Debug, Config, Clone)]
 pub struct LoggingConfiguration {
-    #[config(env = "APP_LOGGING_LEVEL")]
+    #[config(env = "APP_LOGGING_GLOBAL")]
     pub global: String,
     pub crates: Option<HashMap<String, String>>,
 }

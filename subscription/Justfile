@@ -14,7 +14,7 @@ run: sqlx-migrate
 	cargo run | bunyan
 
 sqlx-prepare:
-	cargo sqlx prepare --database-url postgres://newsletter:welcome@localhost:15432/newsletter --workspace
+	cargo sqlx prepare --database-url postgres://subscription:welcome@localhost:15432/subscription --workspace
 
 watch-run: sqlx-migrate
 	cargo watch -x run | bunyan

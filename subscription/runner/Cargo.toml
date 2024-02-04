@@ -18,7 +18,7 @@ messengers = { path = "../infrastructure/messengers" }
 
 anyhow = "1"
 confique = { version = "0.2", default-features = false, features = ["yaml"] }
-tokio = { version = "1.35", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.35", features = ["rt-multi-thread", "macros", "net"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-bunyan-formatter = "0.3"
 tracing-log = "0.2"
