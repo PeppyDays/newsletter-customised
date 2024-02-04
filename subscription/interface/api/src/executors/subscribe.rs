@@ -50,6 +50,7 @@ pub async fn execute(
         .map_err(|error| match error {
             SubscriberError::InvalidSubscriberName
             | SubscriberError::InvalidSubscriberEmail
+            | SubscriberError::InvalidSubscriberStatus
             | SubscriberError::SubscriberNotFound(_) => {
                 ApiError::new(StatusCode::BAD_REQUEST, error.into())
             }

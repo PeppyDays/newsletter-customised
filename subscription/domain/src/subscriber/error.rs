@@ -8,6 +8,9 @@ pub enum SubscriberError {
     #[error("Subscriber's email is invalid")]
     InvalidSubscriberEmail,
 
+    #[error("Subscriber's status is invalid")]
+    InvalidSubscriberStatus,
+
     #[error("Subscriber (ID: {0}) doesn't exist")]
     SubscriberNotFound(Uuid),
 

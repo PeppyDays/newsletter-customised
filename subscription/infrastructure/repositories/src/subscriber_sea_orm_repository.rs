@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::str::FromStr;
 
 use anyhow::Context;
 use sea_orm::entity::prelude::*;
@@ -54,7 +53,7 @@ impl From<Model> for Subscriber {
             id: data_model.id,
             email: SubscriberEmail::parse(data_model.email).unwrap(),
             name: SubscriberName::parse(data_model.name).unwrap(),
-            status: SubscriberStatus::from_str(&data_model.status).unwrap(),
+            status: SubscriberStatus::parse(data_model.status).unwrap(),
         }
     }
 }
@@ -161,11 +160,7 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
         status: SubscriberStatus,
     ) -> Result<Vec<Subscriber>, SubscriberError> {
         Ok(Entity::find()
-            .filter(Column::Status.eq(match status {
-                SubscriberStatus::Confirmed => "Confirmed",
-                SubscriberStatus::Unconfirmed => "Unconfirmed",
-                SubscriberStatus::Unknown => "Unknown",
-            }))
+            .filter(Column::Status.eq(status.as_ref()))
             .all(&self.pool)
             .await
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?

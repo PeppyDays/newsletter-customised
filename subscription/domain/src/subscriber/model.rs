@@ -25,11 +25,30 @@ impl Subscriber {
     }
 }
 
-#[derive(Debug, PartialEq, strum_macros::AsRefStr, strum_macros::EnumString)]
+#[derive(Debug, PartialEq, strum_macros::EnumString)]
 pub enum SubscriberStatus {
     Confirmed,
     Unconfirmed,
-    Unknown,
+}
+
+// The next two functions can be simplified by using the strum crate
+impl AsRef<str> for SubscriberStatus {
+    fn as_ref(&self) -> &str {
+        match self {
+            SubscriberStatus::Confirmed => "Confirmed",
+            SubscriberStatus::Unconfirmed => "Unconfirmed",
+        }
+    }
+}
+
+impl SubscriberStatus {
+    pub fn parse(s: String) -> Result<Self, SubscriberError> {
+        match s.as_str() {
+            "Confirmed" => Ok(Self::Confirmed),
+            "Unconfirmed" => Ok(Self::Unconfirmed),
+            _ => Err(SubscriberError::InvalidSubscriberStatus),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
