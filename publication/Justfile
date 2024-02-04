@@ -26,7 +26,6 @@ container-down:
 	docker compose down
 
 sqlx-migrate:
-	sqlx database create --database-url postgres://publication:welcome@localhost:25434/publication
 	sqlx migrate run --database-url postgres://publication:welcome@localhost:25432/publication --source infrastructure/repositories/migrations
 
 fmt:

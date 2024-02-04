@@ -4,3 +4,7 @@ pub use crate::subscriber::model::{
     SubscriberEmail,
     SubscriberEmailVerifiationStatus,
 };
+pub use crate::subscriber::repository::{
+    MockSubscriberRepository,
+    SubscriberRepository,
+};

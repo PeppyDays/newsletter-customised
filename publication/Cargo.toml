@@ -5,7 +5,7 @@ members = [
   "interface/api",
   "infrastructure/gateways",
   "domain",
-  "tests",
+  "tests", "infrastructure/repositories",
 ]
 
 [workspace.lints.rust]
