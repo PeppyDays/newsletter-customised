@@ -1,20 +1,62 @@
-name: Newsletter Subscription CI
+name: Newsletter CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ci.yaml"
+      - "subscription/**"
+      - "publication/**"
+  pull_request:
+    paths:
+      - ".github/workflows/ci.yaml"
+      - "subscription/**"
+      - "publication/**"
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  detect-service-changes:
+    name: Detect Service Changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      changed-services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared: &shared
+              - .github/**
+            subscription:
+              - *shared
+              - subscription/**
+            publication:
+              - *shared
+              - publication/**
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs:
+      - detect-service-changes
+    if: ${{ needs.detect-service-changes.outputs.changed-services != '[]' }}
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-service-changes.outputs.changed-services) }}
+        exclude:
+          - module: shared
     steps:
       - uses: extractions/setup-just@v1
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run containers
         run: |
-          cd subscription
+          cd ${{ matrix.module }}
           just container-up
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -23,22 +65,29 @@ jobs:
           cargo install sqlx-cli
       - name: Migrate database
         run: |
-          cd subscription
-          just migrate
+          cd ${{ matrix.module }}
+          just sqlx-migrate
       - name: Run tests
         run: |
-          cd subscription
+          cd ${{ matrix.module }}
           just test
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs:
+      - detect-service-changes
+    if: ${{ needs.detect-service-changes.outputs.changed-services != '[]' }}
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-service-changes.outputs.changed-services) }}
+        exclude:
+          - module: shared
     steps:
       - uses: extractions/setup-just@v1
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run containers
         run: |
-          cd subscription
+          cd ${{ matrix.module }}
           just container-up
       - uses: dtolnay/rust-toolchain@nightly
         with:
@@ -49,13 +98,13 @@ jobs:
           cargo install sqlx-cli
       - name: Migrate database
         run: |
-          cd subscription
-          just migrate
+          cd ${{ matrix.module }}
+          just sqlx-migrate
       - name: Formatting
         run: |
-          cd subscription
+          cd ${{ matrix.module }}
           just fmt-check
       - name: Linting
         run: |
-          cd subscription
+          cd ${{ matrix.module }}
           just lint-check
