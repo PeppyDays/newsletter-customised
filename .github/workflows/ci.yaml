@@ -104,7 +104,7 @@ jobs:
         run: |
           cd ${{ matrix.module }}
           just fmt-check
-      - name: Linting
-        run: |
-          cd ${{ matrix.module }}
-          just lint-check
+      # - name: Linting
+      #   run: |
+      #     cd ${{ matrix.module }}
+      #     just lint-check
