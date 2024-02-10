@@ -25,7 +25,7 @@ impl Subscriber {
     }
 }
 
-#[derive(Debug, PartialEq, strum_macros::EnumString)]
+#[derive(Debug, PartialEq)]
 pub enum SubscriberStatus {
     Confirmed,
     Unconfirmed,

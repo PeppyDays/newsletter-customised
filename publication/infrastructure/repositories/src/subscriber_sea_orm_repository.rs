@@ -1,11 +1,17 @@
 use anyhow::Context;
 use sea_orm::entity::prelude::*;
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, TransactionTrait};
+use sea_orm::{
+    ActiveValue,
+    TransactionTrait,
+};
 use uuid::Uuid;
 
 use domain::prelude::{
-    Subscriber, SubscriberEmail, SubscriberEmailVerifiationStatus, SubscriberError,
+    Subscriber,
+    SubscriberEmail,
+    SubscriberEmailVerifiationStatus,
+    SubscriberError,
     SubscriberRepository,
 };
 
@@ -61,8 +67,8 @@ impl From<EmailVerificationStatus> for SubscriberEmailVerifiationStatus {
     }
 }
 
-impl From<&Subscriber> for ActiveModel {
-    fn from(subscriber: &Subscriber) -> Self {
+impl From<&mut Subscriber> for ActiveModel {
+    fn from(subscriber: &mut Subscriber) -> Self {
         Self {
             id: ActiveValue::Set(subscriber.id),
             email_address: ActiveValue::Set(subscriber.email.address.clone()),
@@ -85,6 +91,7 @@ impl From<Model> for Subscriber {
                 ),
             },
             name: data_model.name,
+            pending_events: vec![],
         }
     }
 }
@@ -100,34 +107,14 @@ impl SubscriberSeaOrmRepository {
     }
 }
 
-impl SubscriberSeaOrmRepository {
-    #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
-        Ok(Entity::find()
-            .filter(Column::Id.eq(id))
-            .one(&self.pool)
-            .await
-            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
-            .map(Subscriber::from))
-    }
-}
-
+// TODO: Implement saving pending events
 #[async_trait::async_trait]
 impl SubscriberRepository for SubscriberSeaOrmRepository {
     #[tracing::instrument(name = "Saving subscriber details", skip(self))]
-    async fn save(&self, subscriber: &Subscriber) -> Result<(), SubscriberError> {
+    async fn save(&self, subscriber: &mut Subscriber) -> Result<(), SubscriberError> {
         let data_model = ActiveModel::from(subscriber);
 
         Entity::insert(data_model)
-            .on_conflict(
-                OnConflict::column(Column::Id)
-                    .update_columns([
-                        Column::EmailAddress,
-                        Column::EmailVerificationStatus,
-                        Column::Name,
-                    ])
-                    .to_owned(),
-            )
             .exec(&self.pool)
             .await
             .map_err(|error| {
@@ -145,11 +132,10 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
     }
 
     #[tracing::instrument(name = "Modifying subscriber details", skip(self, modifier))]
-    async fn modify(
-        &self,
-        id: Uuid,
-        modifier: fn(Subscriber) -> Result<Subscriber, SubscriberError>,
-    ) -> Result<(), SubscriberError> {
+    async fn modify<F>(&self, id: Uuid, mut modifier: F) -> Result<(), SubscriberError>
+    where
+        F: FnMut(&mut Subscriber) -> Result<(), SubscriberError> + Send,
+    {
         let transaction = self
             .pool
             .begin()
@@ -157,16 +143,40 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
             .context("Failed to start a transaction")
             .map_err(SubscriberError::RepositoryOperationFailed)?;
 
-        let subscriber = Entity::find()
+        let mut subscriber = Entity::find()
             .filter(Column::Id.eq(id))
             .one(&transaction)
             .await
             .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
             .map(Subscriber::from)
-            .ok_or(SubscriberError::SubscriberNotFound(id))?;
+            .unwrap_or_default();
 
-        let subscriber = modifier(subscriber)?;
-        self.save(&subscriber).await?;
+        modifier(&mut subscriber)?;
+
+        let data_model = ActiveModel::from(&mut subscriber);
+
+        Entity::insert(data_model)
+            .on_conflict(
+                OnConflict::column(Column::Id)
+                    .update_columns([
+                        Column::EmailAddress,
+                        Column::EmailVerificationStatus,
+                        Column::Name,
+                    ])
+                    .to_owned(),
+            )
+            .exec(&transaction)
+            .await
+            .map_err(|error| {
+                if error
+                    .to_string()
+                    .contains("duplicate key value violates unique constraint")
+                {
+                    SubscriberError::InvalidSubscriberEmail
+                } else {
+                    SubscriberError::RepositoryOperationFailed(error.into())
+                }
+            })?;
 
         transaction
             .commit()
@@ -175,6 +185,16 @@ impl SubscriberRepository for SubscriberSeaOrmRepository {
             .map_err(SubscriberError::RepositoryOperationFailed)?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(name = "Searching subscriber details by ID", skip(self))]
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subscriber>, SubscriberError> {
+        Ok(Entity::find()
+            .filter(Column::Id.eq(id))
+            .one(&self.pool)
+            .await
+            .map_err(|error| SubscriberError::RepositoryOperationFailed(error.into()))?
+            .map(Subscriber::from))
     }
 
     #[tracing::instrument(name = "Fetching all subscribers", skip(self))]
@@ -239,21 +259,25 @@ mod tests {
     }
 
     fn generate_subscriber() -> Subscriber {
-        let id = Uuid::new_v4();
-        let email = SubscriberEmail::new(SafeEmail().fake());
-        let name = FirstName().fake();
-
-        Subscriber::new(id, email, name)
+        Subscriber {
+            id: Uuid::new_v4(),
+            email: SubscriberEmail {
+                address: SafeEmail().fake(),
+                verification_status: SubscriberEmailVerifiationStatus::Unverified,
+            },
+            name: FirstName().fake(),
+            pending_events: vec![],
+        }
     }
 
     #[tokio::test]
     async fn fetching_by_id_after_saving_via_repository_makes_the_same_subscriber() {
         // given
         let repository = get_repository(false).await;
-        let subscriber = generate_subscriber();
+        let mut subscriber = generate_subscriber();
 
         // when
-        repository.save(&subscriber).await.unwrap();
+        repository.save(&mut subscriber).await.unwrap();
 
         // then
         let saved_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
@@ -281,40 +305,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn saving_entity_two_times_will_update_original_entity() {
-        // given
-        let repository = get_repository(false).await;
-        let mut subscriber = generate_subscriber();
-
-        repository.save(&subscriber).await.unwrap();
-
-        // when
-        subscriber
-            .email
-            .verify_as(SubscriberEmailVerifiationStatus::Valid)
-            .unwrap();
-        repository.save(&subscriber).await.unwrap();
-
-        // then
-        let persisted_subscriber = repository.find_by_id(subscriber.id).await.unwrap().unwrap();
-        assert_eq!(
-            persisted_subscriber.email.verification_status,
-            SubscriberEmailVerifiationStatus::Valid
-        );
-    }
-
-    #[tokio::test]
     async fn modifying_subscriber_name_succeeds_when_no_errors_from_repository() {
         // given
         let repository = get_repository(true).await;
-        let subscriber = generate_subscriber();
-        repository.save(&subscriber).await.unwrap();
+        let mut subscriber = generate_subscriber();
+        repository.save(&mut subscriber).await.unwrap();
 
         // when
         repository
-            .modify(subscriber.id, |mut subscriber| {
+            .modify(subscriber.id, |subscriber| {
                 subscriber.name = "New name".to_string();
-                Ok(subscriber)
+                Ok(())
             })
             .await
             .unwrap();
@@ -328,12 +329,12 @@ mod tests {
     async fn modifying_subscriber_ensures_atomic_operation_despite_of_repository_error() {
         // given
         let repository = get_repository(true).await;
-        let subscriber = generate_subscriber();
-        repository.save(&subscriber).await.unwrap();
+        let mut subscriber = generate_subscriber();
+        repository.save(&mut subscriber).await.unwrap();
 
         // when
         let response = repository
-            .modify(subscriber.id, |mut _subscriber| {
+            .modify(subscriber.id, |_subscriber| {
                 Err(SubscriberError::RepositoryOperationFailed(anyhow::anyhow!(
                     "Some errors"
                 )))
