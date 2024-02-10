@@ -11,6 +11,9 @@ pub enum SubscriberError {
     #[error("Subscriber (ID: {0}) doesn't exist")]
     SubscriberNotFound(Uuid),
 
+    #[error("Single subscriber is expected, but found multiple subscribers")]
+    MultipleSubscribersFound,
+
     #[error("Failed to operator on repository")]
     RepositoryOperationFailed(#[source] anyhow::Error),
 
