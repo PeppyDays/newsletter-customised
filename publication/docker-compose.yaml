@@ -12,3 +12,15 @@ services:
       POSTGRES_PASSWORD: welcome
       POSTGRES_DB: publication
     command: postgres -c "max_connections=1000"
+  publication-local-aws:
+    image: localstack/localstack
+    hostname: publication-local-aws
+    container_name: publication-local-aws
+    ports:
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:4510-4559:4510-4559"
+    environment:
+      - DEBUG=${DEBUG:-0}
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
