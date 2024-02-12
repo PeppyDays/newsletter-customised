@@ -14,14 +14,14 @@ use domain::prelude::{
     SubscriptionTokenRepository,
 };
 
-use crate::runner::Container;
 use crate::{
     checkers,
+    container,
     executors,
     readers,
 };
 
-pub async fn get_router<R, M, T>(container: Container<R, M, T>) -> Router
+pub async fn get_router<R, M, T>(container: container::Container<R, M, T>) -> Router
 where
     R: SubscriberRepository + Clone + Send + Sync + 'static,
     M: SubscriberMessenger + Clone + Send + Sync + 'static,

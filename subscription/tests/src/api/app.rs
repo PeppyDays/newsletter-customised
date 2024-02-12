@@ -139,7 +139,7 @@ impl App {
         );
 
         // create container for application context
-        let container = api::runner::Container::new(
+        let container = api::container::Container::new(
             subscriber_repository.clone(),
             subscriber_messenger.clone(),
             subscription_token_repository.clone(),

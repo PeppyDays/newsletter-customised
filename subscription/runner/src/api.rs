@@ -71,7 +71,7 @@ pub async fn run(configuration: configuration::Configuration) {
     let subscriber_messenger = messengers::prelude::SubscriberFakeMessenger::new();
 
     // configure container which of the application context
-    let container = api::runner::Container::new(
+    let container = api::container::Container::new(
         subscriber_repository,
         subscriber_messenger,
         subscription_token_repository,
