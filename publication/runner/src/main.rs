@@ -10,5 +10,5 @@ async fn main() {
     runner::telemetry::initialize_subscriber(subscriber);
 
     // run api
-    runner::api::run(configuration).await;
+    runner::api::run(&configuration).await;
 }

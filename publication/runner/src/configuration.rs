@@ -1,12 +1,18 @@
 use std::collections::HashMap;
 
 use confique::Config;
-use tokio::net::TcpListener;
+use secrecy::{
+    ExposeSecret,
+    Secret,
+};
 
 #[derive(Debug, Config, Clone)]
 pub struct Configuration {
     #[config(nested)]
-    pub application: ApplicationConfiguration,
+    pub api: ApiConfiguration,
+
+    #[config(nested)]
+    pub database: DatabaseConfiguration,
 
     #[config(nested)]
     pub gateways: GatewaysConfiguration,
@@ -16,18 +22,71 @@ pub struct Configuration {
 }
 
 #[derive(Debug, Config, Clone)]
-pub struct ApplicationConfiguration {
+pub struct ApiConfiguration {
     #[config(nested)]
-    pub listening_address: ApplicationListeningAddress,
+    pub listening: ApiListening,
 }
 
 #[derive(Debug, Config, Clone)]
-pub struct ApplicationListeningAddress {
-    #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_HOST")]
+pub struct ApiListening {
+    #[config(env = "APP_API_LISTENING_HOST")]
     pub host: String,
 
-    #[config(env = "APP_APPLICATION_LISTENING_ADDRESS_PORT")]
+    #[config(env = "APP_API_LISTENING_PORT")]
     pub port: u16,
+}
+
+#[derive(Debug, Config, Clone)]
+pub struct DatabaseConfiguration {
+    #[config(nested)]
+    pub source: DatabaseSource,
+
+    #[config(nested)]
+    pub pool_options: DatabasePoolOptions,
+}
+
+#[derive(Debug, Config, Clone)]
+pub struct DatabaseSource {
+    #[config(env = "APP_DATABASE_SOURCE_HOST")]
+    pub host: String,
+
+    #[config(env = "APP_DATABASE_SOURCE_PORT")]
+    pub port: u16,
+
+    #[config(env = "APP_DATABASE_SOURCE_USERNAME")]
+    pub username: String,
+
+    #[config(env = "APP_DATABASE_SOURCE_PASSWORD")]
+    pub password: Secret<String>,
+
+    #[config(env = "APP_DATABASE_SOURCE_DATABASE")]
+    pub database: String,
+}
+
+#[derive(Debug, Config, Clone)]
+pub struct DatabasePoolOptions {
+    pub min_connections: u32,
+    pub max_connections: u32,
+    pub connect_timeout: u64,
+}
+
+impl DatabaseConfiguration {
+    pub fn connection_string_without_database(&self) -> Secret<String> {
+        Secret::new(format!(
+            "postgresql://{}:{}@{}:{}",
+            self.source.username,
+            self.source.password.expose_secret(),
+            self.source.host,
+            self.source.port,
+        ))
+    }
+    pub fn connection_string_with_database(&self) -> Secret<String> {
+        Secret::new(format!(
+            "{}/{}",
+            self.connection_string_without_database().expose_secret(),
+            self.source.database,
+        ))
+    }
 }
 
 #[derive(Debug, Config, Clone)]
@@ -38,8 +97,8 @@ pub struct GatewaysConfiguration {
 
 #[derive(Debug, Config, Clone)]
 pub struct SubscriptionGatewayAddress {
-    #[config(env = "APP_GATEWAYS_SUBSCRIPTION_URL")]
-    pub url: String,
+    #[config(env = "APP_GATEWAYS_SUBSCRIPTION_ORIGIN")]
+    pub origin: String,
 }
 
 #[derive(Debug, Config, Clone)]
@@ -55,14 +114,4 @@ pub async fn get_configuration(file: &str) -> Configuration {
         .file(file)
         .load()
         .expect("Failed to load configuration")
-}
-
-pub async fn bind_listener(configuration: &Configuration) -> TcpListener {
-    TcpListener::bind(format!(
-        "{}:{}",
-        configuration.application.listening_address.host,
-        configuration.application.listening_address.port,
-    ))
-    .await
-    .expect("Failed to bind a port for application")
 }
