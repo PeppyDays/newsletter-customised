@@ -3,21 +3,30 @@ use axum::http::Request;
 use axum::routing::get;
 use axum::Router;
 use tower_http::trace::TraceLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 use uuid::Uuid;
 
 use domain::prelude::SubscriberRepository;
 
-use crate::checkers;
 use crate::container::Container;
+use crate::{
+    checkers,
+    document,
+};
 
 pub async fn get_router<R>(container: Container<R>) -> Router
 where
     R: SubscriberRepository + Clone + Send + Sync + 'static,
 {
     Router::new()
-        .route("/health/readiness", get(checkers::readiness::handle))
+        .merge(SwaggerUi::new("/swagger-ui").url(
+            "/api-docs/openapi.json",
+            document::OpenApiDocument::openapi(),
+        ))
+        .route("/checkers/readiness", get(checkers::readiness::handle))
         .with_state(container)
-        .route("/health/liveness", get(checkers::liveness::handle))
+        .route("/checkers/liveness", get(checkers::liveness::handle))
         .layer(
             // Refer to https://github.com/tokio-rs/axum/blob/main/examples/tracing-aka-logging/Cargo.toml
             TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

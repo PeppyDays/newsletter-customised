@@ -2,6 +2,9 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
 // TODO: Is there a better way to handle dependencies liveness check?
+#[utoipa::path(get, path = "/checkers/readiness", responses(
+    (status = 200, description = "Check readiness of API service")
+))]
 pub async fn handle() -> impl IntoResponse {
     // // check subscriber repository
     // let response = container
