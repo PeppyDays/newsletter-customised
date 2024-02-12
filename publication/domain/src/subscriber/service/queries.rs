@@ -57,6 +57,7 @@ impl TryFrom<SubscriberQueryResult> for Vec<Subscriber> {
     }
 }
 
+#[derive(Clone)]
 pub struct SubscriberQueryReader<R>
 where
     R: SubscriberRepository,

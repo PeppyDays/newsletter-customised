@@ -15,6 +15,7 @@ pub enum SubscriberCommand {
     VerifySubscriberEmailAs(VerifySubscriberEmailAs),
 }
 
+#[derive(Clone)]
 pub struct SubscriberCommandExecutor<R>
 where
     R: SubscriberRepository,
